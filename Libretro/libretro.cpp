@@ -5,6 +5,7 @@
 #include "LibretroKeyManager.h"
 #include "LibretroMessageManager.h"
 #include "libretro.h"
+#include "libretro_core_options.h"
 #include "../Core/Console.h"
 #include "../Core/VideoDecoder.h"
 #include "../Core/VideoRenderer.h"
@@ -144,35 +145,10 @@ extern "C" {
 
 	RETRO_API void retro_set_environment(retro_environment_t env)
 	{
+		bool option_categories = false;
 		env_cb = env;
 
-		static constexpr struct retro_variable vars[] = {
-			{ MesenNtscFilter, "NTSC filter; Disabled|Composite (Blargg)|S-Video (Blargg)|RGB (Blargg)|Monochrome (Blargg)|Bisqwit 2x|Bisqwit 4x|Bisqwit 8x" },
-			{ MesenPalette, "Palette; Default|Composite Direct (by FirebrandX)|Nes Classic|Nestopia (RGB)|Original Hardware (by FirebrandX)|PVM Style (by FirebrandX)|Sony CXA2025AS|Unsaturated v6 (by FirebrandX)|YUV v3 (by FirebrandX)|Wavebeam (by nakedarthur)|Custom|Raw" },
-			{ MesenOverclock, "Overclock; None|Low|Medium|High|Very High" },
-			{ MesenOverclockType, "Overclock Type; Before NMI (Recommended)|After NMI" },
-			{ MesenRegion, "Region; Auto|NTSC|PAL|Dendy" },
-			{ MesenOverscanLeft, "Left Overscan; None|4px|8px|12px|16px" },
-			{ MesenOverscanRight, "Right Overscan; None|4px|8px|12px|16px" },
-			{ MesenOverscanTop, "Top Overscan; None|4px|8px|12px|16px|20px|24px" },
-			{ MesenOverscanBottom, "Bottom Overscan; None|4px|8px|12px|16px|20px|24px" },
-			{ MesenAspectRatio, "Aspect Ratio; Auto|No Stretching|NTSC|PAL|4:3|4:3 (Preserved)|16:9|16:9 (Preserved)" },
-			{ MesenControllerTurboSpeed, "Controller Turbo Speed; Fast|Very Fast|Disabled|Slow|Normal" },
-			{ MesenShiftButtonsClockwise, u8"Shift A/B/X/Y clockwise; disabled|enabled" },
-			{ MesenHdPacks, "Enable HD Packs; enabled|disabled" },
-			{ MesenNoSpriteLimit, "Remove sprite limit; disabled|enabled" },
-			{ MesenFakeStereo, u8"Enable fake stereo effect; disabled|enabled" },
-			{ MesenMuteTriangleUltrasonic, u8"Reduce popping on Triangle channel; enabled|disabled" },
-			{ MesenReduceDmcPopping, u8"Reduce popping on DMC channel; enabled|disabled" },
-			{ MesenSwapDutyCycle, u8"Swap Square channel duty cycles; disabled|enabled" },
-			{ MesenDisableNoiseModeFlag, u8"Disable Noise channel mode flag; disabled|enabled" },
-			{ MesenScreenRotation, u8"Screen Rotation; None|90 degrees|180 degrees|270 degrees" },
-			{ MesenRamState, "Default power-on state for RAM; All 0s (Default)|All 1s|Random Values" },
-			{ MesenFdsAutoSelectDisk, "FDS: Automatically insert disks; disabled|enabled" },
-			{ MesenFdsFastForwardLoad, "FDS: Fast forward while loading; disabled|enabled" },
-			{ MesenAudioSampleRate, "Sound Output Sample Rate; 48000|96000|11025|22050|44100" },
-			{ NULL, NULL },
-		};
+		libretro_set_core_options(env_cb, &option_categories);
 
 		static constexpr struct retro_controller_description pads1[] = {
 			{ "Auto", DEVICE_AUTO },
@@ -245,7 +221,6 @@ extern "C" {
 			{ NULL, false, false }
 		};
 
-		env_cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 		env_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 		env_cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)content_overrides);
 	}
