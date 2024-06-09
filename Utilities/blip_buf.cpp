@@ -19,61 +19,49 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
+//#define DEBUG_BLIP
+
+#ifdef DEBUG_BLIP
+#include <windows.h>
+#include <stdio.h>
+
+void debug_me(char *msg, int x)
+{
+	while(GetModuleHandle(NULL)) {
+		if( GetModuleHandle(msg) ) Sleep(1);
+		Sleep (1);
+	}
+}
+#endif
+
 #if defined (BLARGG_TEST) && BLARGG_TEST
 	#include "blargg_test.h"
 #endif
 
-/* Equivalent to ULONG_MAX >= 0xFFFFFFFF00000000.
-Avoids constants that don't fit in 32 bits. */
-#if ULONG_MAX/0xFFFFFFFF > 0xFFFFFFFF
-	typedef unsigned long fixed_t;
-	enum { pre_shift = 32 };
+/*
+APU = 1789773 NTSC - 1662607 PAL
+Crystal = 21.47727 = 6 x 3.57954 MHz NTSC
 
-#elif defined(ULLONG_MAX)
-	typedef unsigned long long fixed_t;
-	enum { pre_shift = 32 };
-
-#else
-	typedef unsigned fixed_t;
-	enum { pre_shift = 0 };
-
-#endif
-
-enum { time_bits = pre_shift + 20 };
-
-static fixed_t const time_unit = (fixed_t) 1 << time_bits;
-
-enum { bass_shift  = 9 }; /* affects high-pass filter breakpoint frequency */
-enum { end_frame_extra = 2 }; /* allows deltas slightly after frame length */
-
-enum { half_width  = 8 };
-enum { buf_extra   = half_width*2 + end_frame_extra };
-enum { phase_bits  = 5 };
-enum { phase_count = 1 << phase_bits };
-enum { delta_bits  = 15 };
-enum { delta_unit  = 1 << delta_bits };
-enum { frac_bits = time_bits - pre_shift };
-
-/* We could eliminate avail and encode whole samples in offset, but that would
-limit the total buffered samples to blip_max_frame. That could only be
-increased by decreasing time_bits, which would reduce resample ratio accuracy.
+53693175 clock @ 50 == 1073863.5  [2^20.034]
 */
 
-/** Sample buffer that resamples to output rate and accumulates samples
-until they're read out */
+typedef unsigned long long fixed_t;
+
+enum { time_bits = 64-22 };  /* 22.42 -- 768000 * 2^42 = 2EE0 0000 0000 0000*/
+static fixed_t const time_unit = (fixed_t) 1 << time_bits;
+
+typedef signed int buf_t;
+
 struct blip_t
 {
 	fixed_t factor;
 	fixed_t offset;
-	int avail;
 	int size;
-	int integrator;
+	int clock_rate;
+	int sample_rate;
+	buf_t integrator;
+	buf_t* buffer;
 };
-
-typedef int buf_t;
-
-/* probably not totally portable */
-#define SAMPLES( buf ) ((buf_t*) ((buf) + 1))
 
 /* Arithmetic (sign-preserving) right shift */
 #define ARITH_SHIFT( n, shift ) \
@@ -83,11 +71,14 @@ enum { max_sample = +32767 };
 enum { min_sample = -32768 };
 
 #define CLAMP( n ) \
-	{\
-		if ( (short) n != n )\
-			n = ARITH_SHIFT( n, 16 ) ^ max_sample;\
-	}
+{\
+	if ( n > max_sample ) n = max_sample;\
+	else if ( n < min_sample) n = min_sample;\
+}
 
+#include "blip_lpf.h"
+
+#ifdef BLIP_ASSERT
 static void check_assumptions( void )
 {
 	int n;
@@ -109,19 +100,35 @@ static void check_assumptions( void )
 	assert( blip_max_ratio <= time_unit );
 	assert( blip_max_frame <= (fixed_t) -1 >> time_bits );
 }
+#endif
 
 blip_t* blip_new( int size )
 {
 	blip_t* m;
+#ifdef BLIP_ASSERT
 	assert( size >= 0 );
+#endif
 	
-	m = (blip_t*) malloc( sizeof *m + (size + buf_extra) * sizeof (buf_t) );
+	m = (blip_t*) malloc( sizeof *m );
+	
+#ifdef DEBUG_BLIP
+	printf("[blip_new] %d\n", size); fflush(stdout);
+#endif
+
 	if ( m )
 	{
-		m->factor = time_unit / blip_max_ratio;
+		m->buffer = (buf_t*) malloc( size * sizeof (buf_t));
+		if (m->buffer == NULL)
+		{
+			blip_delete(m);
+			return 0;
+		}
+		m->factor = time_unit;
 		m->size   = size;
 		blip_clear( m );
+#ifdef BLIP_ASSERT
 		check_assumptions();
+#endif
 	}
 	return m;
 }
@@ -130,6 +137,9 @@ void blip_delete( blip_t* m )
 {
 	if ( m != NULL )
 	{
+		if (m->buffer != NULL)
+			free(m->buffer);
+
 		/* Clear fields in case user tries to use after freeing */
 		memset( m, 0, sizeof *m );
 		free( m );
@@ -138,43 +148,43 @@ void blip_delete( blip_t* m )
 
 void blip_set_rates( blip_t* m, double clock_rate, double sample_rate )
 {
-	double factor = time_unit * sample_rate / clock_rate;
-	m->factor = (fixed_t) factor;
-	
+	m->factor = (fixed_t) ((double) time_unit * sample_rate / clock_rate);
+
+	m->clock_rate = (int) clock_rate;
+	m->sample_rate = (int) sample_rate;
+
+#ifdef DEBUG_BLIP
+	printf("[blip_set_rates] %d %d %lld\n", (int) clock_rate, (int) sample_rate, m->factor); fflush(stdout);
+#endif
+
+#ifdef BLIP_ASSERT
 	/* Fails if clock_rate exceeds maximum, relative to sample_rate */
 	assert( 0 <= factor - m->factor && factor - m->factor < 1 );
-	
-	/* Avoid requiring math.h. Equivalent to
-	m->factor = (int) ceil( factor ) */
-	if ( m->factor < factor )
-		m->factor++;
-	
-	/* At this point, factor is most likely rounded up, but could still
-	have been rounded down in the floating-point calculation. */
+#endif
 }
 
 void blip_clear( blip_t* m )
 {
-	/* We could set offset to 0, factor/2, or factor-1. 0 is suitable if
-	factor is rounded up. factor-1 is suitable if factor is rounded down.
-	Since we don't know rounding direction, factor/2 accommodates either,
-	with the slight loss of showing an error in half the time. Since for
-	a 64-bit factor this is years, the halving isn't a problem. */
-	
-	m->offset     = m->factor / 2;
-	m->avail      = 0;
+	m->offset     = 0;
 	m->integrator = 0;
-	memset( SAMPLES( m ), 0, (m->size + buf_extra) * sizeof (buf_t) );
+	memset( m->buffer, 0, m->size * sizeof (buf_t) );
 }
 
 int blip_clocks_needed( const blip_t* m, int samples )
 {
 	fixed_t needed;
-	
+
+#ifdef BLIP_ASSERT
 	/* Fails if buffer can't hold that many more samples */
 	assert( samples >= 0 && m->avail + samples <= m->size );
+#endif
 	
 	needed = (fixed_t) samples * time_unit;
+
+#ifdef DEBUG_BLIP
+	printf("[blip_clocks_needed] %d\n", samples); fflush(stdout);
+#endif
+
 	if ( needed < m->offset )
 		return 0;
 	
@@ -183,56 +193,80 @@ int blip_clocks_needed( const blip_t* m, int samples )
 
 void blip_end_frame( blip_t* m, unsigned t )
 {
-	fixed_t off = t * m->factor + m->offset;
-	m->avail += off >> time_bits;
-	m->offset = off & (time_unit - 1);
+#ifdef DEBUG_BLIP
+	printf("[blip_end_frame] %lld %d %lld\n", m->offset, t, m->factor); fflush(stdout);
+#endif
+
+	m->offset += (fixed_t) t * m->factor;
 	
+#ifdef DEBUG_BLIP
+	printf("[blip_end_frame] %lld %d %lld\n", m->offset, t, m->factor); fflush(stdout);
+#endif
+
+#ifdef BLIP_ASSERT
 	/* Fails if buffer size was exceeded */
 	assert( m->avail <= m->size );
+#endif
 }
 
 int blip_samples_avail( const blip_t* m )
 {
-	return m->avail;
+	return (m->offset >> time_bits);
 }
 
 static void remove_samples( blip_t* m, int count )
 {
-	buf_t* buf = SAMPLES( m );
-	int remain = m->avail + buf_extra - count;
-	m->avail -= count;
+	buf_t* buf = m->buffer;
+
+	int lpf_taps = blip_lpf_taps(m->sample_rate);
+
+	int remain = (m->offset >> time_bits) - count;
+	if( lpf_taps > remain ) remain = lpf_taps;
+
+	m->offset -= count * time_unit;
 	
-	memmove( &buf [0], &buf [count], remain * sizeof buf [0] );
-	memset( &buf [remain], 0, count * sizeof buf [0] );
+#ifdef DEBUG_BLIP
+	printf("[blip_remove_samples] %d %d %d %lld\n", remain, lpf_taps, count, m->offset); fflush(stdout);
+#endif
+
+	memmove( &buf [0], &buf [count], remain * sizeof (buf_t) );
+	memset( &buf [remain], 0, count * sizeof (buf_t) );
 }
 
 int blip_read_samples( blip_t* m, short out [], int count, int stereo )
 {
+#ifdef DEBUG_BLIP
+	printf("[blip_read_samples] %d\n", count); fflush(stdout);
+	//debug_me("blip_read_samples", count);
+#endif
+
+#ifdef BLIP_ASSERT
 	assert( count >= 0 );
+#endif
 	
-	if ( count > m->avail )
-		count = m->avail;
+	if ( count > blip_samples_avail(m) )
+		count = blip_samples_avail(m);
 	
 	if ( count )
 	{
-		int const step = stereo ? 2 : 1;
-		buf_t const* in  = SAMPLES( m );
+		buf_t const* in = m->buffer;
 		buf_t const* end = in + count;
-		int sum = m->integrator;
+		buf_t sum = m->integrator;
+		int step = stereo ? 1 : 0;
 		do
 		{
 			/* Eliminate fraction */
-			int s = ARITH_SHIFT( sum, delta_bits );
-			
+			buf_t s = ARITH_SHIFT( sum, lpf_frac );
+#ifdef DEBUG_BLIP
+			//printf("%d %d\n", sum, s); fflush(stdout);
+#endif
+
 			sum += *in++;
 			
 			CLAMP( s );
 			
-			*out = s;
+			*out++ = s;
 			out += step;
-			
-			/* High-pass filter */
-			sum -= s << (delta_bits - bass_shift);
 		}
 		while ( in != end );
 		m->integrator = sum;
@@ -249,97 +283,30 @@ int blip_read_samples( blip_t* m, short out [], int count, int stereo )
 	restrict
 */
 
-/* Sinc_Generator( 0.9, 0.55, 4.5 ) */
-static short const bl_step [phase_count + 1] [half_width] =
-{
-{   43, -115,  350, -488, 1136, -914, 5861,21022},
-{   44, -118,  348, -473, 1076, -799, 5274,21001},
-{   45, -121,  344, -454, 1011, -677, 4706,20936},
-{   46, -122,  336, -431,  942, -549, 4156,20829},
-{   47, -123,  327, -404,  868, -418, 3629,20679},
-{   47, -122,  316, -375,  792, -285, 3124,20488},
-{   47, -120,  303, -344,  714, -151, 2644,20256},
-{   46, -117,  289, -310,  634,  -17, 2188,19985},
-{   46, -114,  273, -275,  553,  117, 1758,19675},
-{   44, -108,  255, -237,  471,  247, 1356,19327},
-{   43, -103,  237, -199,  390,  373,  981,18944},
-{   42,  -98,  218, -160,  310,  495,  633,18527},
-{   40,  -91,  198, -121,  231,  611,  314,18078},
-{   38,  -84,  178,  -81,  153,  722,   22,17599},
-{   36,  -76,  157,  -43,   80,  824, -241,17092},
-{   34,  -68,  135,   -3,    8,  919, -476,16558},
-{   32,  -61,  115,   34,  -60, 1006, -683,16001},
-{   29,  -52,   94,   70, -123, 1083, -862,15422},
-{   27,  -44,   73,  106, -184, 1152,-1015,14824},
-{   25,  -36,   53,  139, -239, 1211,-1142,14210},
-{   22,  -27,   34,  170, -290, 1261,-1244,13582},
-{   20,  -20,   16,  199, -335, 1301,-1322,12942},
-{   18,  -12,   -3,  226, -375, 1331,-1376,12293},
-{   15,   -4,  -19,  250, -410, 1351,-1408,11638},
-{   13,    3,  -35,  272, -439, 1361,-1419,10979},
-{   11,    9,  -49,  292, -464, 1362,-1410,10319},
-{    9,   16,  -63,  309, -483, 1354,-1383, 9660},
-{    7,   22,  -75,  322, -496, 1337,-1339, 9005},
-{    6,   26,  -85,  333, -504, 1312,-1280, 8355},
-{    4,   31,  -94,  341, -507, 1278,-1205, 7713},
-{    3,   35, -102,  347, -506, 1238,-1119, 7082},
-{    1,   40, -110,  350, -499, 1190,-1021, 6464},
-{    0,   43, -115,  350, -488, 1136, -914, 5861}
-};
-
-/* Shifting by pre_shift allows calculation using unsigned int rather than
-possibly-wider fixed_t. On 32-bit platforms, this is likely more efficient.
-And by having pre_shift 32, a 32-bit platform can easily do the shift by
-simply ignoring the low half. */
-
 void blip_add_delta( blip_t* m, unsigned time, int delta )
 {
-	unsigned fixed = (unsigned) ((time * m->factor + m->offset) >> pre_shift);
-	buf_t* out = SAMPLES( m ) + m->avail + (fixed >> frac_bits);
-	
-	int const phase_shift = frac_bits - phase_bits;
-	int phase = fixed >> phase_shift & (phase_count - 1);
-	short const* in  = bl_step [phase];
-	short const* rev = bl_step [phase_count - phase];
-	
-	int interp = fixed >> (phase_shift - delta_bits) & (delta_unit - 1);
-	int delta2 = (delta * interp) >> delta_bits;
-	delta -= delta2;
-	
+	if (!delta) return;
+
+	//debug_me("blip_add_delta", time);
+
+	fixed_t fixed = (fixed_t) (time * m->factor + m->offset);
+	int pos = fixed >> time_bits;
+
+	buf_t* out = m->buffer + pos;
+
+#ifdef DEBUG_BLIP
+	printf("[blip_add_delta] %lld %d %d %d %d\n", fixed, pos, time, delta); fflush(stdout);
+#endif
+
+#ifdef BLIP_ASSERT
 	/* Fails if buffer size was exceeded */
-	assert( out <= &SAMPLES( m ) [m->size + end_frame_extra] );
-	
-	out [0] += in[0]*delta + in[half_width+0]*delta2;
-	out [1] += in[1]*delta + in[half_width+1]*delta2;
-	out [2] += in[2]*delta + in[half_width+2]*delta2;
-	out [3] += in[3]*delta + in[half_width+3]*delta2;
-	out [4] += in[4]*delta + in[half_width+4]*delta2;
-	out [5] += in[5]*delta + in[half_width+5]*delta2;
-	out [6] += in[6]*delta + in[half_width+6]*delta2;
-	out [7] += in[7]*delta + in[half_width+7]*delta2;
-	
-	in = rev;
-	out [ 8] += in[7]*delta + in[7-half_width]*delta2;
-	out [ 9] += in[6]*delta + in[6-half_width]*delta2;
-	out [10] += in[5]*delta + in[5-half_width]*delta2;
-	out [11] += in[4]*delta + in[4-half_width]*delta2;
-	out [12] += in[3]*delta + in[3-half_width]*delta2;
-	out [13] += in[2]*delta + in[2-half_width]*delta2;
-	out [14] += in[1]*delta + in[1-half_width]*delta2;
-	out [15] += in[0]*delta + in[0-half_width]*delta2;
+	assert( pos <= m->size );
+#endif
+
+	blip_lpf_mono(m->sample_rate, out, delta);
 }
 
 void blip_add_delta_fast( blip_t* m, unsigned time, int delta )
 {
-	unsigned fixed = (unsigned) ((time * m->factor + m->offset) >> pre_shift);
-	buf_t* out = SAMPLES( m ) + m->avail + (fixed >> frac_bits);
-	
-	int interp = fixed >> (frac_bits - delta_bits) & (delta_unit - 1);
-	int delta2 = delta * interp;
-	
-	/* Fails if buffer size was exceeded */
-	assert( out <= &SAMPLES( m ) [m->size + end_frame_extra] );
-	
-	out [7] += delta * delta_unit - delta2;
-	out [8] += delta2;
+	blip_add_delta(m, time, delta);
 }

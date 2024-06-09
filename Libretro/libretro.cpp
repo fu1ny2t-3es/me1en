@@ -49,6 +49,7 @@ static string _mesenVersion = "";
 static int32_t _saveStateSize = -1;
 static bool _shiftButtonsClockwise = false;
 static int32_t _audioSampleRate = 48000;
+int32_t _audioVolume = 100;
 
 //Include game database as a byte array (representing the MesenDB.txt file)
 #include "MesenDB.inc"
@@ -81,6 +82,7 @@ static constexpr const char* MesenSwapDutyCycle = "mesen_swap_duty_cycle";
 static constexpr const char* MesenDisableNoiseModeFlag = "mesen_disable_noise_mode_flag";
 static constexpr const char* MesenShiftButtonsClockwise = "mesen_shift_buttons_clockwise";
 static constexpr const char* MesenAudioSampleRate = "mesen_audio_sample_rate";
+static constexpr const char* MesenAudioVolume = "mesen_audio_volume";
 
 uint32_t defaultPalette[0x40] { 0xFF666666, 0xFF002A88, 0xFF1412A7, 0xFF3B00A4, 0xFF5C007E, 0xFF6E0040, 0xFF6C0600, 0xFF561D00, 0xFF333500, 0xFF0B4800, 0xFF005200, 0xFF004F08, 0xFF00404D, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFADADAD, 0xFF155FD9, 0xFF4240FF, 0xFF7527FE, 0xFFA01ACC, 0xFFB71E7B, 0xFFB53120, 0xFF994E00, 0xFF6B6D00, 0xFF388700, 0xFF0C9300, 0xFF008F32, 0xFF007C8D, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFFFEFF, 0xFF64B0FF, 0xFF9290FF, 0xFFC676FF, 0xFFF36AFF, 0xFFFE6ECC, 0xFFFE8170, 0xFFEA9E22, 0xFFBCBE00, 0xFF88D800, 0xFF5CE430, 0xFF45E082, 0xFF48CDDE, 0xFF4F4F4F, 0xFF000000, 0xFF000000, 0xFFFFFEFF, 0xFFC0DFFF, 0xFFD3D2FF, 0xFFE8C8FF, 0xFFFBC2FF, 0xFFFEC4EA, 0xFFFECCC5, 0xFFF7D8A5, 0xFFE4E594, 0xFFCFEF96, 0xFFBDF4AB, 0xFFB3F3CC, 0xFFB5EBF2, 0xFFB8B8B8, 0xFF000000, 0xFF000000 };
 uint32_t unsaturatedPalette[0x40] { 0xFF6B6B6B, 0xFF001E87, 0xFF1F0B96, 0xFF3B0C87, 0xFF590D61, 0xFF5E0528, 0xFF551100, 0xFF461B00, 0xFF303200, 0xFF0A4800, 0xFF004E00, 0xFF004619, 0xFF003A58, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFB2B2B2, 0xFF1A53D1, 0xFF4835EE, 0xFF7123EC, 0xFF9A1EB7, 0xFFA51E62, 0xFFA52D19, 0xFF874B00, 0xFF676900, 0xFF298400, 0xFF038B00, 0xFF008240, 0xFF007891, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFF63ADFD, 0xFF908AFE, 0xFFB977FC, 0xFFE771FE, 0xFFF76FC9, 0xFFF5836A, 0xFFDD9C29, 0xFFBDB807, 0xFF84D107, 0xFF5BDC3B, 0xFF48D77D, 0xFF48CCCE, 0xFF555555, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFFC4E3FE, 0xFFD7D5FE, 0xFFE6CDFE, 0xFFF9CAFE, 0xFFFEC9F0, 0xFFFED1C7, 0xFFF7DCAC, 0xFFE8E89C, 0xFFD1F29D, 0xFFBFF4B1, 0xFFB7F5CD, 0xFFB7F0EE, 0xFFBEBEBE, 0xFF000000, 0xFF000000 };
@@ -92,6 +94,9 @@ uint32_t originalHardwarePalette[0x40] { 0xFF6A6D6A, 0xFF00127D, 0xFF1E008A, 0xF
 uint32_t pvmStylePalette[0x40] { 0xFF696964, 0xFF001774, 0xFF28007D, 0xFF3E006D, 0xFF560057, 0xFF5E0013, 0xFF531A00, 0xFF3B2400, 0xFF2A3000, 0xFF143A00, 0xFF003F00, 0xFF003B1E, 0xFF003050, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFB9B9B4, 0xFF1453B9, 0xFF4D2CDA, 0xFF7A1EC8, 0xFF98189C, 0xFF9D2344, 0xFFA03E00, 0xFF8D5500, 0xFF656D00, 0xFF2C7900, 0xFF008100, 0xFF007D42, 0xFF00788A, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFF69A8FF, 0xFF9A96FF, 0xFFC28AFA, 0xFFEA7DFA, 0xFFF387B4, 0xFFF1986C, 0xFFE6B327, 0xFFD7C805, 0xFF90DF07, 0xFF64E53C, 0xFF45E27D, 0xFF48D5D9, 0xFF4B4B46, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFFD2EAFF, 0xFFE2E2FF, 0xFFF2D8FF, 0xFFF8D2FF, 0xFFF8D9EA, 0xFFFADEB9, 0xFFF9E89B, 0xFFF3F28C, 0xFFD3FA91, 0xFFB8FCA8, 0xFFAEFACA, 0xFFCAF3F3, 0xFFBEBEB9, 0xFF000000, 0xFF000000 };
 uint32_t sonyCxa2025AsPalette[0x40] { 0xFF585858, 0xFF00238C, 0xFF00139B, 0xFF2D0585, 0xFF5D0052, 0xFF7A0017, 0xFF7A0800, 0xFF5F1800, 0xFF352A00, 0xFF093900, 0xFF003F00, 0xFF003C22, 0xFF00325D, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFA1A1A1, 0xFF0053EE, 0xFF153CFE, 0xFF6028E4, 0xFFA91D98, 0xFFD41E41, 0xFFD22C00, 0xFFAA4400, 0xFF6C5E00, 0xFF2D7300, 0xFF007D06, 0xFF007852, 0xFF0069A9, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFF1FA5FE, 0xFF5E89FE, 0xFFB572FE, 0xFFFE65F6, 0xFFFE6790, 0xFFFE773C, 0xFFFE9308, 0xFFC4B200, 0xFF79CA10, 0xFF3AD54A, 0xFF11D1A4, 0xFF06BFFE, 0xFF424242, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFFA0D9FE, 0xFFBDCCFE, 0xFFE1C2FE, 0xFFFEBCFB, 0xFFFEBDD0, 0xFFFEC5A9, 0xFFFED18E, 0xFFE9DE86, 0xFFC7E992, 0xFFA8EEB0, 0xFF95ECD9, 0xFF91E4FE, 0xFFACACAC, 0xFF000000, 0xFF000000 };
 uint32_t wavebeamPalette[0x40] { 0xFF6B6B6B, 0xFF001B88, 0xFF21009A, 0xFF40008C, 0xFF600067, 0xFF64001E, 0xFF590800, 0xFF481600, 0xFF283600, 0xFF004500, 0xFF004908, 0xFF00421D, 0xFF003659, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFB4B4B4, 0xFF1555D3, 0xFF4337EF, 0xFF7425DF, 0xFF9C19B9, 0xFFAC0F64, 0xFFAA2C00, 0xFF8A4B00, 0xFF666B00, 0xFF218300, 0xFF008A00, 0xFF008144, 0xFF007691, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFF63B2FF, 0xFF7C9CFF, 0xFFC07DFE, 0xFFE977FF, 0xFFF572CD, 0xFFF4886B, 0xFFDDA029, 0xFFBDBD0A, 0xFF89D20E, 0xFF5CDE3E, 0xFF4BD886, 0xFF4DCFD2, 0xFF525252, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFFBCDFFF, 0xFFD2D2FF, 0xFFE1C8FF, 0xFFEFC7FF, 0xFFFFC3E1, 0xFFFFCAC6, 0xFFF2DAAD, 0xFFEBE3A0, 0xFFD2EDA2, 0xFFBCF4B4, 0xFFB5F1CE, 0xFFB6ECF1, 0xFFBFBFBF, 0xFF000000, 0xFF000000 };
+uint32_t customPalette[512], customPaletteSize;
+
+#include <stdio.h>
 
 extern "C" {
 	void logMessage(retro_log_level level, const char* message)
@@ -127,6 +132,7 @@ extern "C" {
 		_console->GetSettings()->SetFlags(EmulationFlags::FdsAutoLoadDisk);
 		_console->GetSettings()->SetFlags(EmulationFlags::AutoConfigureInput);
 		_console->GetSettings()->SetSampleRate(_audioSampleRate);
+		_console->GetSettings()->SetFlags(EmulationFlags::AllowMismatchingSaveState);
 
 		if (env_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
 			_keyManager->SetSupportsInputBitmasks(true);
@@ -267,20 +273,10 @@ extern "C" {
 	{
 		retro_variable var = {};
 		if(readVariable(key, var)) {
-			string value = string(var.value);
-			if(value == "4px") {
-				return 4;
-			} else if(value == "8px") {
-				return 8;
-			} else if(value == "12px") {
-				return 12;
-			} else if(value == "16px") {
-				return 16;
-			} else if(value == "20px") {
-				return 20;
-			} else if(value == "24px") {
-				return 24;
-			}
+			if (strcmp(var.value, "None") == 0)
+				return 0;
+
+			return atoi(var.value);
 		}
 		return 0;
 	}
@@ -300,9 +296,6 @@ extern "C" {
 
 	void load_custom_palette()
 	{
-		//Setup default palette in case we can't load the custom one
-		_console->GetSettings()->SetUserRgbPalette(defaultPalette);
-
 		//Try to load the custom palette from the MesenPalette.pal file
 		string palettePath = FolderUtilities::CombinePath(FolderUtilities::GetHomeFolder(), "MesenPalette.pal");
 		uint8_t fileData[512 * 3] = {};
@@ -313,11 +306,10 @@ extern "C" {
 			palette.seekg(0, ios::beg);
 			if((fileSize == 64 * 3) || (fileSize == 512 * 3)) {
 				palette.read((char*)fileData, fileSize);
-				uint32_t customPalette[512];
 				for(int i = 0; i < fileSize / 3; i++) {
 					customPalette[i] = 0xFF000000 | fileData[i * 3 + 2] | (fileData[i * 3 + 1] << 8) | (fileData[i * 3] << 16);
 				}
-				_console->GetSettings()->SetUserRgbPalette(customPalette, (uint32_t)fileSize / 3);
+				customPaletteSize = (uint32_t)fileSize / 3;
 			}
 		}
 	}
@@ -382,31 +374,40 @@ extern "C" {
 
 		if(readVariable(MesenPalette, var)) {
 			string value = string(var.value);
+			
+			//Setup default palette in case we can't load the custom one
+			memcpy(customPalette, defaultPalette, sizeof(defaultPalette));
+			customPaletteSize = 64;
+
 			if(value == "Default") {
-				_console->GetSettings()->SetUserRgbPalette(defaultPalette);
+				memcpy(customPalette, defaultPalette, sizeof(defaultPalette));
 			} else if(value == "Composite Direct (by FirebrandX)") {
-				_console->GetSettings()->SetUserRgbPalette(compositeDirectPalette);
+				memcpy(customPalette, compositeDirectPalette, sizeof(compositeDirectPalette));
 			} else if(value == "Nes Classic") {
-				_console->GetSettings()->SetUserRgbPalette(nesClassicPalette);
+				memcpy(customPalette, nesClassicPalette, sizeof(nesClassicPalette));
 			} else if(value == "Nestopia (RGB)") {
-				_console->GetSettings()->SetUserRgbPalette(nestopiaRgbPalette);
+				memcpy(customPalette, nestopiaRgbPalette, sizeof(nestopiaRgbPalette));
 			} else if(value == "Original Hardware (by FirebrandX)") {
-				_console->GetSettings()->SetUserRgbPalette(originalHardwarePalette);
+				memcpy(customPalette, originalHardwarePalette, sizeof(originalHardwarePalette));
 			} else if(value == "PVM Style (by FirebrandX)") {
-				_console->GetSettings()->SetUserRgbPalette(pvmStylePalette);
+				memcpy(customPalette, pvmStylePalette, sizeof(pvmStylePalette));
 			} else if(value == "Sony CXA2025AS") {
-				_console->GetSettings()->SetUserRgbPalette(sonyCxa2025AsPalette);
+				memcpy(customPalette, sonyCxa2025AsPalette, sizeof(sonyCxa2025AsPalette));
 			} else if(value == "Unsaturated v6 (by FirebrandX)") {
-				_console->GetSettings()->SetUserRgbPalette(unsaturatedPalette);
+				memcpy(customPalette, unsaturatedPalette, sizeof(unsaturatedPalette));
 			} else if(value == "YUV v3 (by FirebrandX)") {
-				_console->GetSettings()->SetUserRgbPalette(yuvPalette);
+				memcpy(customPalette, yuvPalette, sizeof(yuvPalette));
 			} else if(value == "Wavebeam (by nakedarthur)") {
-				_console->GetSettings()->SetUserRgbPalette(wavebeamPalette);
+				memcpy(customPalette, wavebeamPalette, sizeof(wavebeamPalette));
 			} else if(value == "Custom") {
 				load_custom_palette();
-			} else if(value == "Raw") {
+			}
+
+			if(value == "Raw") {
 				//Using the raw palette replaces the NTSC filters, if one is selected
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::Raw);
+			} else {
+				_console->GetSettings()->SetUserRgbPalette(customPalette, customPaletteSize);
 			}
 		}
 
@@ -534,7 +535,6 @@ extern "C" {
 			int old_value = _audioSampleRate;
 
 			_audioSampleRate = atoi(var.value);
-			_audioSampleRate = (_audioSampleRate > 96000) ? 96000 : _audioSampleRate;
 
 			if(old_value != _audioSampleRate) {
 				_console->GetSettings()->SetSampleRate(_audioSampleRate);
@@ -546,6 +546,19 @@ extern "C" {
 					env_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &system_av_info);
 				}
 			}
+		}
+
+		if(readVariable("mesen_audio_lowpass_cutoff", var)) {
+			int new_value = atoi(var.value);
+
+			extern void set_blip_cutoff(int rate);
+			set_blip_cutoff(new_value);
+		}
+		
+		if(readVariable(MesenAudioVolume, var)) {
+			_audioVolume = atoi(var.value);
+
+			_console->GetSettings()->SetMasterVolume(5.0 * _audioVolume / 100.0);
 		}
 
 		auto getKeyCode = [=](int port, int retroKey) {
@@ -707,6 +720,8 @@ extern "C" {
 		bool result = _console->GetSaveStateManager()->LoadState(ss, false);
 		if(result)
 			_console->GetSettings()->SetSampleRate(_audioSampleRate);
+
+		update_settings();
 		return result;
 	}
 
@@ -1070,7 +1085,6 @@ extern "C" {
 		update_settings();
 
 		//Plug in 2 standard controllers by default, game database will switch the controller types for recognized games
-		_console->GetSettings()->SetMasterVolume(10.0);
 		_console->GetSettings()->SetControllerType(0, ControllerType::StandardController);
 		_console->GetSettings()->SetControllerType(1, ControllerType::StandardController);
 		_console->GetSettings()->SetControllerType(2, ControllerType::None);
@@ -1186,7 +1200,7 @@ extern "C" {
 			vscale = hdData->Scale;
 		}
 
-		if(hscale <= 2)
+		if(hscale == 2 && !hdData)
 			_console->GetVideoRenderer()->GetSystemAudioVideoInfo(*info, NES_NTSC_OUT_WIDTH(256), 240 * vscale);
 		else
 			_console->GetVideoRenderer()->GetSystemAudioVideoInfo(*info, 256 * hscale, 240 * vscale);

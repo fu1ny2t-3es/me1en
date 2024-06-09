@@ -1,0 +1,17 @@
+Emulation:
+- Allow mismatching savestate
+
+
+Audio:
+- Internal sampling rates  (higher values = less lag, more crisp)
+- High-quality low-pass filters  (blackman or kaiser, much better than blargg)
+- 64-bit blip buffer  (more jitter accuracy)
+- Volume slider  (master = 0-200)
+
+
+Video:
+- Dynamic reloading of custom palette
+
+
+Compiler:
+- MinGW build fixes  (ternary parsing)
