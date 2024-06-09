@@ -49,6 +49,7 @@ static string _mesenVersion = "";
 static int32_t _saveStateSize = -1;
 static bool _shiftButtonsClockwise = false;
 static int32_t _audioSampleRate = 48000;
+int32_t _audioVolume = 100;
 
 //Include game database as a byte array (representing the MesenDB.txt file)
 #include "MesenDB.inc"
@@ -81,6 +82,7 @@ static constexpr const char* MesenSwapDutyCycle = "mesen_swap_duty_cycle";
 static constexpr const char* MesenDisableNoiseModeFlag = "mesen_disable_noise_mode_flag";
 static constexpr const char* MesenShiftButtonsClockwise = "mesen_shift_buttons_clockwise";
 static constexpr const char* MesenAudioSampleRate = "mesen_audio_sample_rate";
+static constexpr const char* MesenAudioVolume = "mesen_audio_volume";
 
 uint32_t defaultPalette[0x40] { 0xFF666666, 0xFF002A88, 0xFF1412A7, 0xFF3B00A4, 0xFF5C007E, 0xFF6E0040, 0xFF6C0600, 0xFF561D00, 0xFF333500, 0xFF0B4800, 0xFF005200, 0xFF004F08, 0xFF00404D, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFADADAD, 0xFF155FD9, 0xFF4240FF, 0xFF7527FE, 0xFFA01ACC, 0xFFB71E7B, 0xFFB53120, 0xFF994E00, 0xFF6B6D00, 0xFF388700, 0xFF0C9300, 0xFF008F32, 0xFF007C8D, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFFFEFF, 0xFF64B0FF, 0xFF9290FF, 0xFFC676FF, 0xFFF36AFF, 0xFFFE6ECC, 0xFFFE8170, 0xFFEA9E22, 0xFFBCBE00, 0xFF88D800, 0xFF5CE430, 0xFF45E082, 0xFF48CDDE, 0xFF4F4F4F, 0xFF000000, 0xFF000000, 0xFFFFFEFF, 0xFFC0DFFF, 0xFFD3D2FF, 0xFFE8C8FF, 0xFFFBC2FF, 0xFFFEC4EA, 0xFFFECCC5, 0xFFF7D8A5, 0xFFE4E594, 0xFFCFEF96, 0xFFBDF4AB, 0xFFB3F3CC, 0xFFB5EBF2, 0xFFB8B8B8, 0xFF000000, 0xFF000000 };
 uint32_t unsaturatedPalette[0x40] { 0xFF6B6B6B, 0xFF001E87, 0xFF1F0B96, 0xFF3B0C87, 0xFF590D61, 0xFF5E0528, 0xFF551100, 0xFF461B00, 0xFF303200, 0xFF0A4800, 0xFF004E00, 0xFF004619, 0xFF003A58, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFB2B2B2, 0xFF1A53D1, 0xFF4835EE, 0xFF7123EC, 0xFF9A1EB7, 0xFFA51E62, 0xFFA52D19, 0xFF874B00, 0xFF676900, 0xFF298400, 0xFF038B00, 0xFF008240, 0xFF007891, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFF63ADFD, 0xFF908AFE, 0xFFB977FC, 0xFFE771FE, 0xFFF76FC9, 0xFFF5836A, 0xFFDD9C29, 0xFFBDB807, 0xFF84D107, 0xFF5BDC3B, 0xFF48D77D, 0xFF48CCCE, 0xFF555555, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFFC4E3FE, 0xFFD7D5FE, 0xFFE6CDFE, 0xFFF9CAFE, 0xFFFEC9F0, 0xFFFED1C7, 0xFFF7DCAC, 0xFFE8E89C, 0xFFD1F29D, 0xFFBFF4B1, 0xFFB7F5CD, 0xFFB7F0EE, 0xFFBEBEBE, 0xFF000000, 0xFF000000 };
@@ -127,6 +129,7 @@ extern "C" {
 		_console->GetSettings()->SetFlags(EmulationFlags::FdsAutoLoadDisk);
 		_console->GetSettings()->SetFlags(EmulationFlags::AutoConfigureInput);
 		_console->GetSettings()->SetSampleRate(_audioSampleRate);
+		_console->GetSettings()->SetFlags(EmulationFlags::AllowMismatchingSaveState);
 
 		if (env_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
 			_keyManager->SetSupportsInputBitmasks(true);
@@ -148,7 +151,38 @@ extern "C" {
 		bool option_categories = false;
 		env_cb = env;
 
+<<<<<<< HEAD
 		libretro_set_core_options(env_cb, &option_categories);
+=======
+		static constexpr struct retro_variable vars[] = {
+			{ MesenNtscFilter, "NTSC filter; Disabled|Composite (Blargg)|S-Video (Blargg)|RGB (Blargg)|Monochrome (Blargg)|Bisqwit 2x|Bisqwit 4x|Bisqwit 8x" },
+			{ MesenPalette, "Palette; Default|Composite Direct (by FirebrandX)|Nes Classic|Nestopia (RGB)|Original Hardware (by FirebrandX)|PVM Style (by FirebrandX)|Sony CXA2025AS|Unsaturated v6 (by FirebrandX)|YUV v3 (by FirebrandX)|Wavebeam (by nakedarthur)|Custom|Raw" },
+			{ MesenOverclock, "Overclock; None|Low|Medium|High|Very High" },
+			{ MesenOverclockType, "Overclock Type; Before NMI (Recommended)|After NMI" },
+			{ MesenRegion, "Region; Auto|NTSC|PAL|Dendy" },
+			{ MesenOverscanLeft, "Left Overscan; None|1px|2px|3px|4px|5px|6px|7px|8px|9px|10px|11px|12px|13px|14px|15px|16px|17px|18px|19px|20px|21px|22px|23px|24px|25px|26px|27px|28px|29px|30px|31px|32px|33px|34px|35px|36px" },
+			{ MesenOverscanRight, "Right Overscan; None|1px|2px|3px|4px|5px|6px|7px|8px|9px|10px|11px|12px|13px|14px|15px|16px|17px|18px|19px|20px|21px|22px|23px|24px|25px|26px|27px|28px|29px|30px|31px|32px|33px|34px|35px|36px" },
+			{ MesenOverscanTop, "Top Overscan; None|1px|2px|3px|4px|5px|6px|7px|8px|9px|10px|11px|12px|13px|14px|15px|16px|17px|18px|19px|20px|21px|22px|23px|24px|25px|26px|27px|28px|29px|30px|31px|32px|33px|34px|35px|36px" },
+			{ MesenOverscanBottom, "Bottom Overscan; None|1px|2px|3px|4px|5px|6px|7px|8px|9px|10px|11px|12px|13px|14px|15px|16px|17px|18px|19px|20px|21px|22px|23px|24px|25px|26px|27px|28px|29px|30px|31px|32px|33px|34px|35px|36px" },
+			{ MesenAspectRatio, "Aspect Ratio; Auto|No Stretching|NTSC|PAL|4:3|4:3 (Preserved)|16:9|16:9 (Preserved)" },
+			{ MesenControllerTurboSpeed, "Controller Turbo Speed; Fast|Very Fast|Disabled|Slow|Normal" },
+			{ MesenShiftButtonsClockwise, u8"Shift A/B/X/Y clockwise; disabled|enabled" },
+			{ MesenHdPacks, "Enable HD Packs; enabled|disabled" },
+			{ MesenNoSpriteLimit, "Remove sprite limit; disabled|enabled" },
+			{ MesenFakeStereo, u8"Enable fake stereo effect; disabled|enabled" },
+			{ MesenMuteTriangleUltrasonic, u8"Reduce popping on Triangle channel; enabled|disabled" },
+			{ MesenReduceDmcPopping, u8"Reduce popping on DMC channel; enabled|disabled" },
+			{ MesenSwapDutyCycle, u8"Swap Square channel duty cycles; disabled|enabled" },
+			{ MesenDisableNoiseModeFlag, u8"Disable Noise channel mode flag; disabled|enabled" },
+			{ MesenScreenRotation, u8"Screen Rotation; None|90 degrees|180 degrees|270 degrees" },
+			{ MesenRamState, "Default power-on state for RAM; All 0s (Default)|All 1s|Random Values" },
+			{ MesenFdsAutoSelectDisk, "FDS: Automatically insert disks; disabled|enabled" },
+			{ MesenFdsFastForwardLoad, "FDS: Fast forward while loading; disabled|enabled" },
+			{ MesenAudioSampleRate, "Sound Output Sample Rate; 48000|96000|192000|384000|768000|22050|44100" },
+			{ MesenAudioVolume, "Sound Volume; 100%|0%|1%|2%|3%|4%|5%|6%|7%|8%|9%|10%|11%|12%|13%|14%|15%|16%|17%|18%|19%|20%|21%|22%|23%|24%|25%|26%|27%|28%|29%|30%|31%|32%|33%|34%|35%|36%|37%|38%|39%|40%|41%|42%|43%|44%|45%|46%|47%|48%|49%|50%|51%|52%|53%|54%|55%|56%|57%|58%|59%|60%|61%|62%|63%|64%|65%|66%|67%|68%|69%|70%|71%|72%|73%|74%|75%|76%|77%|78%|79%|80%|81%|82%|83%|84%|85%|86%|87%|88%|89%|90%|91%|92%|93%|94%|95%|96%|97%|98%|99%" },
+			{ NULL, NULL },
+		};
+>>>>>>> 4c6af02 (Create a.yml)
 
 		static constexpr struct retro_controller_description pads1[] = {
 			{ "Auto", DEVICE_AUTO },
@@ -267,20 +301,10 @@ extern "C" {
 	{
 		retro_variable var = {};
 		if(readVariable(key, var)) {
-			string value = string(var.value);
-			if(value == "4px") {
-				return 4;
-			} else if(value == "8px") {
-				return 8;
-			} else if(value == "12px") {
-				return 12;
-			} else if(value == "16px") {
-				return 16;
-			} else if(value == "20px") {
-				return 20;
-			} else if(value == "24px") {
-				return 24;
-			}
+			if (strcmp(var.value, "None") == 0)
+				return 0;
+
+			return atoi(var.value);
 		}
 		return 0;
 	}
@@ -534,7 +558,6 @@ extern "C" {
 			int old_value = _audioSampleRate;
 
 			_audioSampleRate = atoi(var.value);
-			_audioSampleRate = (_audioSampleRate > 96000) ? 96000 : _audioSampleRate;
 
 			if(old_value != _audioSampleRate) {
 				_console->GetSettings()->SetSampleRate(_audioSampleRate);
@@ -545,6 +568,16 @@ extern "C" {
 					retro_get_system_av_info(&system_av_info);
 					env_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &system_av_info);
 				}
+			}
+		}
+
+		if(readVariable(MesenAudioVolume, var)) {
+			int old_value = _audioVolume;
+
+			_audioVolume = atoi(var.value);
+
+			if(old_value != _audioVolume) {
+				_console->GetSettings()->SetMasterVolume(10.0 * _audioVolume / 100.0);
 			}
 		}
 
@@ -707,6 +740,8 @@ extern "C" {
 		bool result = _console->GetSaveStateManager()->LoadState(ss, false);
 		if(result)
 			_console->GetSettings()->SetSampleRate(_audioSampleRate);
+
+		update_settings();
 		return result;
 	}
 
@@ -1070,7 +1105,6 @@ extern "C" {
 		update_settings();
 
 		//Plug in 2 standard controllers by default, game database will switch the controller types for recognized games
-		_console->GetSettings()->SetMasterVolume(10.0);
 		_console->GetSettings()->SetControllerType(0, ControllerType::StandardController);
 		_console->GetSettings()->SetControllerType(1, ControllerType::StandardController);
 		_console->GetSettings()->SetControllerType(2, ControllerType::None);
@@ -1186,7 +1220,7 @@ extern "C" {
 			vscale = hdData->Scale;
 		}
 
-		if(hscale <= 2)
+		if(hscale == 2 && !hdData)
 			_console->GetVideoRenderer()->GetSystemAudioVideoInfo(*info, NES_NTSC_OUT_WIDTH(256), 240 * vscale);
 		else
 			_console->GetVideoRenderer()->GetSystemAudioVideoInfo(*info, 256 * hscale, 240 * vscale);
