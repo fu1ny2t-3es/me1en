@@ -151,38 +151,7 @@ extern "C" {
 		bool option_categories = false;
 		env_cb = env;
 
-<<<<<<< HEAD
 		libretro_set_core_options(env_cb, &option_categories);
-=======
-		static constexpr struct retro_variable vars[] = {
-			{ MesenNtscFilter, "NTSC filter; Disabled|Composite (Blargg)|S-Video (Blargg)|RGB (Blargg)|Monochrome (Blargg)|Bisqwit 2x|Bisqwit 4x|Bisqwit 8x" },
-			{ MesenPalette, "Palette; Default|Composite Direct (by FirebrandX)|Nes Classic|Nestopia (RGB)|Original Hardware (by FirebrandX)|PVM Style (by FirebrandX)|Sony CXA2025AS|Unsaturated v6 (by FirebrandX)|YUV v3 (by FirebrandX)|Wavebeam (by nakedarthur)|Custom|Raw" },
-			{ MesenOverclock, "Overclock; None|Low|Medium|High|Very High" },
-			{ MesenOverclockType, "Overclock Type; Before NMI (Recommended)|After NMI" },
-			{ MesenRegion, "Region; Auto|NTSC|PAL|Dendy" },
-			{ MesenOverscanLeft, "Left Overscan; None|1px|2px|3px|4px|5px|6px|7px|8px|9px|10px|11px|12px|13px|14px|15px|16px|17px|18px|19px|20px|21px|22px|23px|24px|25px|26px|27px|28px|29px|30px|31px|32px|33px|34px|35px|36px" },
-			{ MesenOverscanRight, "Right Overscan; None|1px|2px|3px|4px|5px|6px|7px|8px|9px|10px|11px|12px|13px|14px|15px|16px|17px|18px|19px|20px|21px|22px|23px|24px|25px|26px|27px|28px|29px|30px|31px|32px|33px|34px|35px|36px" },
-			{ MesenOverscanTop, "Top Overscan; None|1px|2px|3px|4px|5px|6px|7px|8px|9px|10px|11px|12px|13px|14px|15px|16px|17px|18px|19px|20px|21px|22px|23px|24px|25px|26px|27px|28px|29px|30px|31px|32px|33px|34px|35px|36px" },
-			{ MesenOverscanBottom, "Bottom Overscan; None|1px|2px|3px|4px|5px|6px|7px|8px|9px|10px|11px|12px|13px|14px|15px|16px|17px|18px|19px|20px|21px|22px|23px|24px|25px|26px|27px|28px|29px|30px|31px|32px|33px|34px|35px|36px" },
-			{ MesenAspectRatio, "Aspect Ratio; Auto|No Stretching|NTSC|PAL|4:3|4:3 (Preserved)|16:9|16:9 (Preserved)" },
-			{ MesenControllerTurboSpeed, "Controller Turbo Speed; Fast|Very Fast|Disabled|Slow|Normal" },
-			{ MesenShiftButtonsClockwise, u8"Shift A/B/X/Y clockwise; disabled|enabled" },
-			{ MesenHdPacks, "Enable HD Packs; enabled|disabled" },
-			{ MesenNoSpriteLimit, "Remove sprite limit; disabled|enabled" },
-			{ MesenFakeStereo, u8"Enable fake stereo effect; disabled|enabled" },
-			{ MesenMuteTriangleUltrasonic, u8"Reduce popping on Triangle channel; enabled|disabled" },
-			{ MesenReduceDmcPopping, u8"Reduce popping on DMC channel; enabled|disabled" },
-			{ MesenSwapDutyCycle, u8"Swap Square channel duty cycles; disabled|enabled" },
-			{ MesenDisableNoiseModeFlag, u8"Disable Noise channel mode flag; disabled|enabled" },
-			{ MesenScreenRotation, u8"Screen Rotation; None|90 degrees|180 degrees|270 degrees" },
-			{ MesenRamState, "Default power-on state for RAM; All 0s (Default)|All 1s|Random Values" },
-			{ MesenFdsAutoSelectDisk, "FDS: Automatically insert disks; disabled|enabled" },
-			{ MesenFdsFastForwardLoad, "FDS: Fast forward while loading; disabled|enabled" },
-			{ MesenAudioSampleRate, "Sound Output Sample Rate; 48000|96000|192000|384000|768000|22050|44100" },
-			{ MesenAudioVolume, "Sound Volume; 100%|0%|1%|2%|3%|4%|5%|6%|7%|8%|9%|10%|11%|12%|13%|14%|15%|16%|17%|18%|19%|20%|21%|22%|23%|24%|25%|26%|27%|28%|29%|30%|31%|32%|33%|34%|35%|36%|37%|38%|39%|40%|41%|42%|43%|44%|45%|46%|47%|48%|49%|50%|51%|52%|53%|54%|55%|56%|57%|58%|59%|60%|61%|62%|63%|64%|65%|66%|67%|68%|69%|70%|71%|72%|73%|74%|75%|76%|77%|78%|79%|80%|81%|82%|83%|84%|85%|86%|87%|88%|89%|90%|91%|92%|93%|94%|95%|96%|97%|98%|99%" },
-			{ NULL, NULL },
-		};
->>>>>>> 4c6af02 (Create a.yml)
 
 		static constexpr struct retro_controller_description pads1[] = {
 			{ "Auto", DEVICE_AUTO },
