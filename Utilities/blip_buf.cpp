@@ -39,7 +39,7 @@ Avoids constants that don't fit in 32 bits. */
 
 #endif
 
-enum { time_bits = pre_shift + 48 };
+enum { time_bits = pre_shift + 16 };
 
 static fixed_t const time_unit = (fixed_t) 1 << time_bits;
 
@@ -50,7 +50,7 @@ enum { half_width  = 8 };
 enum { buf_extra   = half_width*2 + end_frame_extra };
 enum { phase_bits  = 5 };
 enum { phase_count = 1 << phase_bits };
-enum { delta_bits  = 16 };
+enum { delta_bits  = 15 };
 enum { delta_unit  = 1 << delta_bits };
 enum { frac_bits = time_bits - pre_shift };
 
@@ -87,6 +87,21 @@ enum { min_sample = -32768 };
 		if ( (short) n != n )\
 			n = ARITH_SHIFT( n, 16 ) ^ max_sample;\
 	}
+
+static double blip_sample_rate = 48000.0;
+
+double simple_lowpass_filter(double input)
+{
+/* note: gentle can lower volume by octave but harsh cutoff can add artifacts */
+
+	static double previous_output = 0;
+	static double cutoff_freq = 22000.0;  /* 20 [mp3-320] or 22 [m4a-500] or flac [none] */
+	static double pi = 3.141592653589793;
+
+	double alpha = 2 * pi * cutoff_freq / (double) blip_sample_rate;
+	previous_output = (previous_output) * (1 - alpha) + input * alpha;
+	return previous_output;
+}
 
 static void check_assumptions( void )
 {
@@ -142,6 +157,8 @@ void blip_set_rates( blip_t* m, double clock_rate, double sample_rate )
 {
 	double factor = time_unit * sample_rate / clock_rate;
 	m->factor = (fixed_t) factor;
+	
+	blip_sample_rate = sample_rate;
 	
 	/* Fails if clock_rate exceeds maximum, relative to sample_rate */
 	assert( 0 <= factor - m->factor && factor - m->factor < 1 );
@@ -230,7 +247,7 @@ int blip_read_samples( blip_t* m, short out [], int count, int stereo )
 			
 			CLAMP( s );
 			
-			*out = s;
+			*out = simple_lowpass_filter(s);
 			out += step;
 			
 			/* High-pass filter */
@@ -296,10 +313,11 @@ simply ignoring the low half. */
 
 void blip_add_delta( blip_t* m, unsigned time, int delta )
 {
-	{
-		blip_add_delta_fast(m, time, delta);
-		return;
-	}
+#if 1
+	blip_add_delta_fast(m, time, delta);
+	return;
+#endif
+
 
 	unsigned fixed = (unsigned) ((time * m->factor + m->offset) >> pre_shift);
 	buf_t* out = SAMPLES( m ) + m->avail + (fixed >> frac_bits);
