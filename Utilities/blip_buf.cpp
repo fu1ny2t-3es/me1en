@@ -23,23 +23,10 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 	#include "blargg_test.h"
 #endif
 
-/* Equivalent to ULONG_MAX >= 0xFFFFFFFF00000000.
-Avoids constants that don't fit in 32 bits. */
-#if ULONG_MAX/0xFFFFFFFF > 0xFFFFFFFF
-	typedef unsigned long long fixed_t;
-	enum { pre_shift = 0 };
+typedef unsigned long long fixed_t;
+enum { pre_shift = 0 };
 
-#elif defined(ULLONG_MAX)
-	typedef unsigned long long fixed_t;
-	enum { pre_shift = 0 };
-
-#else
-	typedef unsigned long long fixed_t;
-	enum { pre_shift = 0 };
-
-#endif
-
-enum { time_bits = pre_shift + 16 };
+enum { time_bits = pre_shift + 12 };
 
 static fixed_t const time_unit = (fixed_t) 1 << time_bits;
 
@@ -89,19 +76,6 @@ enum { min_sample = -32768 };
 	}
 
 static double blip_sample_rate = 48000.0;
-
-double simple_lowpass_filter(double input)
-{
-/* note: gentle can lower volume by octave but harsh cutoff can add artifacts */
-
-	static double previous_output = 0;
-	static double cutoff_freq = 22000.0;  /* 20 [mp3-320] or 22 [m4a-500] or flac [none] */
-	static double pi = 3.141592653589793;
-
-	double alpha = 2 * pi * cutoff_freq / (double) blip_sample_rate;
-	previous_output = (previous_output) * (1 - alpha) + input * alpha;
-	return previous_output;
-}
 
 static void check_assumptions( void )
 {
@@ -247,7 +221,7 @@ int blip_read_samples( blip_t* m, short out [], int count, int stereo )
 			
 			CLAMP( s );
 			
-			*out = simple_lowpass_filter(s);
+			*out = s;
 			out += step;
 			
 			/* High-pass filter */
@@ -268,43 +242,175 @@ int blip_read_samples( blip_t* m, short out [], int count, int stereo )
 	restrict
 */
 
-/* Sinc_Generator( 0.9, 0.55, 4.5 ) */
-static short const bl_step [phase_count + 1] [half_width] =
-{
-{   43, -115,  350, -488, 1136, -914, 5861,21022},
-{   44, -118,  348, -473, 1076, -799, 5274,21001},
-{   45, -121,  344, -454, 1011, -677, 4706,20936},
-{   46, -122,  336, -431,  942, -549, 4156,20829},
-{   47, -123,  327, -404,  868, -418, 3629,20679},
-{   47, -122,  316, -375,  792, -285, 3124,20488},
-{   47, -120,  303, -344,  714, -151, 2644,20256},
-{   46, -117,  289, -310,  634,  -17, 2188,19985},
-{   46, -114,  273, -275,  553,  117, 1758,19675},
-{   44, -108,  255, -237,  471,  247, 1356,19327},
-{   43, -103,  237, -199,  390,  373,  981,18944},
-{   42,  -98,  218, -160,  310,  495,  633,18527},
-{   40,  -91,  198, -121,  231,  611,  314,18078},
-{   38,  -84,  178,  -81,  153,  722,   22,17599},
-{   36,  -76,  157,  -43,   80,  824, -241,17092},
-{   34,  -68,  135,   -3,    8,  919, -476,16558},
-{   32,  -61,  115,   34,  -60, 1006, -683,16001},
-{   29,  -52,   94,   70, -123, 1083, -862,15422},
-{   27,  -44,   73,  106, -184, 1152,-1015,14824},
-{   25,  -36,   53,  139, -239, 1211,-1142,14210},
-{   22,  -27,   34,  170, -290, 1261,-1244,13582},
-{   20,  -20,   16,  199, -335, 1301,-1322,12942},
-{   18,  -12,   -3,  226, -375, 1331,-1376,12293},
-{   15,   -4,  -19,  250, -410, 1351,-1408,11638},
-{   13,    3,  -35,  272, -439, 1361,-1419,10979},
-{   11,    9,  -49,  292, -464, 1362,-1410,10319},
-{    9,   16,  -63,  309, -483, 1354,-1383, 9660},
-{    7,   22,  -75,  322, -496, 1337,-1339, 9005},
-{    6,   26,  -85,  333, -504, 1312,-1280, 8355},
-{    4,   31,  -94,  341, -507, 1278,-1205, 7713},
-{    3,   35, -102,  347, -506, 1238,-1119, 7082},
-{    1,   40, -110,  350, -499, 1190,-1021, 6464},
-{    0,   43, -115,  350, -488, 1136, -914, 5861}
+/* https://fiiir.com/ */
+
+/* Kaiser( 768000 sampling, 20000 cutoff, 40000 transition, 60 stopband ) */
+static int const bl_step_768[71] = {
+-0.000098092726162600 * 32767.0,
+-0.000189528252561278 * 32767.0,
+-0.000320447705586071 * 32767.0,
+-0.000494151121613073 * 32767.0,
+-0.000710737007201466 * 32767.0,
+-0.000966136824648772 * 32767.0,
+-0.001251251759043275 * 32767.0,
+-0.001551273009943655 * 32767.0,
+-0.001845264742358474 * 32767.0,
+-0.002106080689066819 * 32767.0,
+-0.002300671401260667 * 32767.0,
+-0.002390817273091819 * 32767.0,
+-0.002334300387735019 * 32767.0,
+-0.002086497990422328 * 32767.0,
+-0.001602351186412020 * 32767.0,
+-0.000838633648428096 * 32767.0,
+0.000243582159112557 * 32767.0,
+0.001676385967545950 * 32767.0,
+0.003482558509245782 * 32767.0,
+0.005673316699617247 * 32767.0,
+0.008246422710621456 * 32767.0,
+0.011184793914599036 * 32767.0,
+0.014455730788425389 * 32767.0,
+0.018010851418428311 * 32767.0,
+0.021786785652236615 * 32767.0,
+0.025706641170947998 * 32767.0,
+0.029682210202755622 * 32767.0,
+0.033616841947171135 * 32767.0,
+0.037408864810365025 * 32767.0,
+0.040955406963715003 * 32767.0,
+0.044156435951209876 * 32767.0,
+0.046918820060101271 * 32767.0,
+0.049160207312117649 * 32767.0,
+0.050812522908097915 * 32767.0,
+0.051824902686163472 * 32767.0,
+0.052165907786116301 * 32767.0,
+0.051824902686163472 * 32767.0,
+0.050812522908097915 * 32767.0,
+0.049160207312117649 * 32767.0,
+0.046918820060101271 * 32767.0,
+0.044156435951209876 * 32767.0,
+0.040955406963715003 * 32767.0,
+0.037408864810365025 * 32767.0,
+0.033616841947171107 * 32767.0,
+0.029682210202755622 * 32767.0,
+0.025706641170947980 * 32767.0,
+0.021786785652236615 * 32767.0,
+0.018010851418428311 * 32767.0,
+0.014455730788425389 * 32767.0,
+0.011184793914599036 * 32767.0,
+0.008246422710621456 * 32767.0,
+0.005673316699617252 * 32767.0,
+0.003482558509245782 * 32767.0,
+0.001676385967545950 * 32767.0,
+0.000243582159112557 * 32767.0,
+-0.000838633648428096 * 32767.0,
+-0.001602351186412019 * 32767.0,
+-0.002086497990422328 * 32767.0,
+-0.002334300387735019 * 32767.0,
+-0.002390817273091819 * 32767.0,
+-0.002300671401260667 * 32767.0,
+-0.002106080689066819 * 32767.0,
+-0.001845264742358474 * 32767.0,
+-0.001551273009943655 * 32767.0,
+-0.001251251759043275 * 32767.0,
+-0.000966136824648772 * 32767.0,
+-0.000710737007201466 * 32767.0,
+-0.000494151121613072 * 32767.0,
+-0.000320447705586071 * 32767.0,
+-0.000189528252561278 * 32767.0,
+-0.000098092726162600 * 32767.0
 };
+
+
+/* Kaiser( 384000 sampling, 20000 cutoff, 40000 transition, 60 stopband ) */
+static int const bl_step_384[35] = {
+-0.000175812880091685 * 32767.0,
+-0.000635812044189314 * 32767.0,
+-0.001479279206595866 * 32767.0,
+-0.002675642074653213 * 32767.0,
+-0.004005148822996397 * 32767.0,
+-0.005016801022270830 * 32767.0,
+-0.005039854685094183 * 32767.0,
+-0.003263360451153054 * 32767.0,
+0.001118636250893612 * 32767.0,
+0.008718423971787051 * 32767.0,
+0.019761811783614903 * 32767.0,
+0.033939358466188771 * 32767.0,
+0.050346538899363219 * 32767.0,
+0.067541651161594218 * 32767.0,
+0.083724439471463283 * 32767.0,
+0.097009046687554987 * 32767.0,
+0.105739753754647753 * 32767.0,
+0.108784101479873621 * 32767.0,
+0.105739753754647753 * 32767.0,
+0.097009046687554987 * 32767.0,
+0.083724439471463283 * 32767.0,
+0.067541651161594218 * 32767.0,
+0.050346538899363219 * 32767.0,
+0.033939358466188771 * 32767.0,
+0.019761811783614892 * 32767.0,
+0.008718423971787051 * 32767.0,
+0.001118636250893612 * 32767.0,
+-0.003263360451153054 * 32767.0,
+-0.005039854685094183 * 32767.0,
+-0.005016801022270830 * 32767.0,
+-0.004005148822996397 * 32767.0,
+-0.002675642074653213 * 32767.0,
+-0.001479279206595866 * 32767.0,
+-0.000635812044189314 * 32767.0,
+-0.000175812880091685 * 32767.0
+};
+
+
+/* Kaiser( 192000 sampling, 20000 cutoff, 40000 transition, 60 stopband ) */
+static int const bl_step_192[19] = {
+-0.000276028503720261 * 32767.0,
+-0.002477319816001691 * 32767.0,
+-0.007094444123606007 * 32767.0,
+-0.010405788713147471 * 32767.0,
+-0.003535920313012242 * 32767.0,
+0.023405680658299382 * 32767.0,
+0.073197876839255563 * 32767.0,
+0.135275284222901887 * 32767.0,
+0.187736879467335943 * 32767.0,
+0.208347560563390016 * 32767.0,
+0.187736879467335943 * 32767.0,
+0.135275284222901887 * 32767.0,
+0.073197876839255563 * 32767.0,
+0.023405680658299382 * 32767.0,
+-0.003535920313012242 * 32767.0,
+-0.010405788713147471 * 32767.0,
+-0.007094444123606014 * 32767.0,
+-0.002477319816001691 * 32767.0,
+-0.000276028503720261 * 32767.0
+};
+
+
+/* Kaiser( 96000 sampling, 20000 cutoff, 40000 transition, 60 stopband ) */
+static int const bl_step_96[11] = {
+0.000335234619452467 * 32767.0,
+-0.009448347470590280 * 32767.0,
+-0.027215990885137889 * 32767.0,
+0.051865459369631738 * 32767.0,
+0.276611612110899019 * 32767.0,
+0.415704064511489890 * 32767.0,
+0.276611612110899019 * 32767.0,
+0.051865459369631738 * 32767.0,
+-0.027215990885137861 * 32767.0,
+-0.009448347470590280 * 32767.0,
+0.000335234619452467 * 32767.0
+};
+
+
+/* Kaiser( 48000 sampling, 20000 cutoff, 23250 transition, 50 stopband ) */
+static int const bl_step_48[7] = {
+0.005910687029449499 * 32767.0,
+-0.051208526065244689 * 32767.0,
+0.127203093247553328 * 32767.0,
+0.836189491576483590 * 32767.0,
+0.127203093247553328 * 32767.0,
+-0.051208526065244689 * 32767.0,
+0.005910687029449499 * 32767.0
+};
+
 
 /* Shifting by pre_shift allows calculation using unsigned int rather than
 possibly-wider fixed_t. On 32-bit platforms, this is likely more efficient.
@@ -313,49 +419,185 @@ simply ignoring the low half. */
 
 void blip_add_delta( blip_t* m, unsigned time, int delta )
 {
-#if 1
+#if 0
 	blip_add_delta_fast(m, time, delta);
 	return;
 #endif
 
+	if (!delta) return;
 
 	unsigned fixed = (unsigned) ((time * m->factor + m->offset) >> pre_shift);
 	buf_t* out = SAMPLES( m ) + m->avail + (fixed >> frac_bits);
-	
-	int const phase_shift = frac_bits - phase_bits;
-	int phase = fixed >> phase_shift & (phase_count - 1);
-	short const* in  = bl_step [phase];
-	short const* rev = bl_step [phase_count - phase];
-	
-	int interp = fixed >> (phase_shift - delta_bits) & (delta_unit - 1);
-	int delta2 = (delta * interp) >> delta_bits;
-	delta -= delta2;
-	
+
 	/* Fails if buffer size was exceeded */
-	assert( out <= &SAMPLES( m ) [m->size + end_frame_extra] );
+	/* assert( out <= &SAMPLES( m ) [m->size + end_frame_extra] ); */
 	
-	out [0] += in[0]*delta + in[half_width+0]*delta2;
-	out [1] += in[1]*delta + in[half_width+1]*delta2;
-	out [2] += in[2]*delta + in[half_width+2]*delta2;
-	out [3] += in[3]*delta + in[half_width+3]*delta2;
-	out [4] += in[4]*delta + in[half_width+4]*delta2;
-	out [5] += in[5]*delta + in[half_width+5]*delta2;
-	out [6] += in[6]*delta + in[half_width+6]*delta2;
-	out [7] += in[7]*delta + in[half_width+7]*delta2;
-	
-	in = rev;
-	out [ 8] += in[7]*delta + in[7-half_width]*delta2;
-	out [ 9] += in[6]*delta + in[6-half_width]*delta2;
-	out [10] += in[5]*delta + in[5-half_width]*delta2;
-	out [11] += in[4]*delta + in[4-half_width]*delta2;
-	out [12] += in[3]*delta + in[3-half_width]*delta2;
-	out [13] += in[2]*delta + in[2-half_width]*delta2;
-	out [14] += in[1]*delta + in[1-half_width]*delta2;
-	out [15] += in[0]*delta + in[0-half_width]*delta2;
+	if( blip_sample_rate == 768000.0 ) {
+		out [0] += bl_step_768[0]*delta;
+		out [1] += bl_step_768[1]*delta;
+		out [2] += bl_step_768[2]*delta;
+		out [3] += bl_step_768[3]*delta;
+		out [4] += bl_step_768[4]*delta;
+		out [5] += bl_step_768[5]*delta;
+		out [6] += bl_step_768[6]*delta;
+		out [7] += bl_step_768[7]*delta;
+		out [8] += bl_step_768[8]*delta;
+		out [9] += bl_step_768[9]*delta;
+		out [10] += bl_step_768[10]*delta;
+		out [11] += bl_step_768[11]*delta;
+		out [12] += bl_step_768[12]*delta;
+		out [13] += bl_step_768[13]*delta;
+		out [14] += bl_step_768[14]*delta;
+		out [15] += bl_step_768[15]*delta;
+		out [16] += bl_step_768[16]*delta;
+		out [17] += bl_step_768[17]*delta;
+		out [18] += bl_step_768[18]*delta;
+		out [19] += bl_step_768[19]*delta;
+		out [20] += bl_step_768[20]*delta;
+		out [21] += bl_step_768[21]*delta;
+		out [22] += bl_step_768[22]*delta;
+		out [23] += bl_step_768[23]*delta;
+		out [24] += bl_step_768[24]*delta;
+		out [25] += bl_step_768[25]*delta;
+		out [26] += bl_step_768[26]*delta;
+		out [27] += bl_step_768[27]*delta;
+		out [28] += bl_step_768[28]*delta;
+		out [29] += bl_step_768[29]*delta;
+		out [30] += bl_step_768[30]*delta;
+		out [31] += bl_step_768[31]*delta;
+		out [32] += bl_step_768[32]*delta;
+		out [33] += bl_step_768[33]*delta;
+		out [34] += bl_step_768[34]*delta;
+		out [35] += bl_step_768[35]*delta;
+		out [36] += bl_step_768[36]*delta;
+		out [37] += bl_step_768[37]*delta;
+		out [38] += bl_step_768[38]*delta;
+		out [39] += bl_step_768[39]*delta;
+		out [40] += bl_step_768[40]*delta;
+		out [41] += bl_step_768[41]*delta;
+		out [42] += bl_step_768[42]*delta;
+		out [43] += bl_step_768[43]*delta;
+		out [44] += bl_step_768[44]*delta;
+		out [45] += bl_step_768[45]*delta;
+		out [46] += bl_step_768[46]*delta;
+		out [47] += bl_step_768[47]*delta;
+		out [48] += bl_step_768[48]*delta;
+		out [49] += bl_step_768[49]*delta;
+		out [50] += bl_step_768[50]*delta;
+		out [51] += bl_step_768[51]*delta;
+		out [52] += bl_step_768[52]*delta;
+		out [53] += bl_step_768[53]*delta;
+		out [54] += bl_step_768[54]*delta;
+		out [55] += bl_step_768[55]*delta;
+		out [56] += bl_step_768[56]*delta;
+		out [57] += bl_step_768[57]*delta;
+		out [58] += bl_step_768[58]*delta;
+		out [59] += bl_step_768[59]*delta;
+		out [60] += bl_step_768[60]*delta;
+		out [61] += bl_step_768[61]*delta;
+		out [62] += bl_step_768[62]*delta;
+		out [63] += bl_step_768[63]*delta;
+		out [64] += bl_step_768[64]*delta;
+		out [65] += bl_step_768[65]*delta;
+		out [66] += bl_step_768[66]*delta;
+		out [67] += bl_step_768[67]*delta;
+		out [68] += bl_step_768[68]*delta;
+		out [69] += bl_step_768[69]*delta;
+		out [70] += bl_step_768[70]*delta;
+	}
+
+	else if( blip_sample_rate == 384000.0 ) {
+		out [0] += bl_step_384[0]*delta;
+		out [1] += bl_step_384[1]*delta;
+		out [2] += bl_step_384[2]*delta;
+		out [3] += bl_step_384[3]*delta;
+		out [4] += bl_step_384[4]*delta;
+		out [5] += bl_step_384[5]*delta;
+		out [6] += bl_step_384[6]*delta;
+		out [7] += bl_step_384[7]*delta;
+		out [8] += bl_step_384[8]*delta;
+		out [9] += bl_step_384[9]*delta;
+		out [10] += bl_step_384[10]*delta;
+		out [11] += bl_step_384[11]*delta;
+		out [12] += bl_step_384[12]*delta;
+		out [13] += bl_step_384[13]*delta;
+		out [14] += bl_step_384[14]*delta;
+		out [15] += bl_step_384[15]*delta;
+		out [16] += bl_step_384[16]*delta;
+		out [17] += bl_step_384[17]*delta;
+		out [18] += bl_step_384[18]*delta;
+		out [19] += bl_step_384[19]*delta;
+		out [20] += bl_step_384[20]*delta;
+		out [21] += bl_step_384[21]*delta;
+		out [22] += bl_step_384[22]*delta;
+		out [23] += bl_step_384[23]*delta;
+		out [24] += bl_step_384[24]*delta;
+		out [25] += bl_step_384[25]*delta;
+		out [26] += bl_step_384[26]*delta;
+		out [27] += bl_step_384[27]*delta;
+		out [28] += bl_step_384[28]*delta;
+		out [29] += bl_step_384[29]*delta;
+		out [30] += bl_step_384[30]*delta;
+		out [31] += bl_step_384[31]*delta;
+		out [32] += bl_step_384[32]*delta;
+		out [33] += bl_step_384[33]*delta;
+		out [34] += bl_step_384[34]*delta;
+	}
+
+	else if( blip_sample_rate == 192000.0 ) {
+		out [0] += bl_step_192[0]*delta;
+		out [1] += bl_step_192[1]*delta;
+		out [2] += bl_step_192[2]*delta;
+		out [3] += bl_step_192[3]*delta;
+		out [4] += bl_step_192[4]*delta;
+		out [5] += bl_step_192[5]*delta;
+		out [6] += bl_step_192[6]*delta;
+		out [7] += bl_step_192[7]*delta;
+		out [8] += bl_step_192[8]*delta;
+		out [9] += bl_step_192[9]*delta;
+		out [10] += bl_step_192[10]*delta;
+		out [11] += bl_step_192[11]*delta;
+		out [12] += bl_step_192[12]*delta;
+		out [13] += bl_step_192[13]*delta;
+		out [14] += bl_step_192[14]*delta;
+		out [15] += bl_step_192[15]*delta;
+		out [16] += bl_step_192[16]*delta;
+		out [17] += bl_step_192[17]*delta;
+		out [18] += bl_step_192[18]*delta;
+	}
+
+	else if( blip_sample_rate == 96000.0 ) {
+		out [0] += bl_step_96[0]*delta;
+		out [1] += bl_step_96[1]*delta;
+		out [2] += bl_step_96[2]*delta;
+		out [3] += bl_step_96[3]*delta;
+		out [4] += bl_step_96[4]*delta;
+		out [5] += bl_step_96[5]*delta;
+		out [6] += bl_step_96[6]*delta;
+		out [7] += bl_step_96[7]*delta;
+		out [8] += bl_step_96[8]*delta;
+		out [9] += bl_step_96[9]*delta;
+		out [10] += bl_step_96[10]*delta;
+	}
+
+	else if( blip_sample_rate == 48000.0 ) {
+		out [0] += bl_step_48[0]*delta;
+		out [1] += bl_step_48[1]*delta;
+		out [2] += bl_step_48[2]*delta;
+		out [3] += bl_step_48[3]*delta;
+		out [4] += bl_step_48[4]*delta;
+		out [5] += bl_step_48[5]*delta;
+		out [6] += bl_step_48[6]*delta;
+	}
 }
 
 void blip_add_delta_fast( blip_t* m, unsigned time, int delta )
 {
+#if 1
+	blip_add_delta(m, time, delta);
+	return;
+#endif
+
 	fixed_t fixed = (fixed_t) ((time * m->factor + m->offset) >> pre_shift);
 	buf_t* out = SAMPLES( m ) + m->avail + (fixed >> frac_bits);
 	
