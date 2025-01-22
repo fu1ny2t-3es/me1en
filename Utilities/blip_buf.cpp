@@ -28,7 +28,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 void debug_me(char *msg, int x)
 {
 	while(GetModuleHandle(NULL)) {
-		if( GetProcAddress(msg) ) Sleep(1);
+		//if( GetProcAddress(msg) ) Sleep(1);
 		Sleep (1);
 	}
 }
