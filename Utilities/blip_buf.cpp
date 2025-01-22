@@ -48,7 +48,7 @@ struct blip_t
 	int avail;
 	int size;
 	buf_t integrator;
-	buf_t buffer;
+	buf_t* buffer;
 };
 
 /* Arithmetic (sign-preserving) right shift */
