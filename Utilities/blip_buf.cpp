@@ -48,10 +48,8 @@ struct blip_t
 	int avail;
 	int size;
 	buf_t integrator;
+	buf_t buffer;
 };
-
-/* probably not totally portable */
-#define SAMPLES( buf ) ((buf_t*) ((buf) + 1))
 
 /* Arithmetic (sign-preserving) right shift */
 #define ARITH_SHIFT( n, shift ) \
@@ -101,9 +99,15 @@ blip_t* blip_new( int size )
 	assert( size >= 0 );
 #endif
 	
-	m = (blip_t*) malloc( sizeof *m + size * sizeof (buf_t) );
+	m = (blip_t*) malloc( sizeof *m );
 	if ( m )
 	{
+		m->buffer = (buf_t*) malloc( size * sizeof (buf_t));
+		if (m->buffer == NULL)
+		{
+			blip_delete(m);
+			return 0;
+		}
 		m->factor = time_unit;
 		m->size   = size;
 		blip_clear( m );
@@ -118,6 +122,9 @@ void blip_delete( blip_t* m )
 {
 	if ( m != NULL )
 	{
+		if (m->buffer != NULL)
+			free(m->buffer);
+
 		/* Clear fields in case user tries to use after freeing */
 		memset( m, 0, sizeof *m );
 		free( m );
@@ -140,7 +147,7 @@ void blip_clear( blip_t* m )
 	m->offset     = 0;
 	m->avail      = 0;
 	m->integrator = 0;
-	memset( SAMPLES( m ), 0, m->size * sizeof (buf_t) );
+	memset( m->buffer, 0, m->size * sizeof (buf_t) );
 }
 
 int blip_clocks_needed( const blip_t* m, int samples )
@@ -176,7 +183,7 @@ int blip_samples_avail( const blip_t* m )
 
 static void remove_samples( blip_t* m, int count )
 {
-	buf_t* buf = SAMPLES( m );
+	buf_t* buf = m->buffer;
 
 	int lpf_taps;
 	switch( blip_sample_rate ) {
@@ -209,7 +216,7 @@ int blip_read_samples( blip_t* m, short out [], int count, int stereo )
 #endif
 	{
 		int const step = stereo ? 2 : 1;
-		buf_t const* in  = SAMPLES( m );
+		buf_t const* in = m->buffer;
 		buf_t const* end = in + count;
 		buf_t sum = m->integrator;
 		do
@@ -246,11 +253,11 @@ void blip_add_delta( blip_t* m, unsigned time, int delta )
 	fixed_t fixed = (fixed_t) (time * m->factor + m->offset);
 	int pos = fixed >> time_bits;
 
-	buf_t* out = SAMPLES( m ); + pos;
+	buf_t* out = m->buffer + pos;
 
 #ifdef BLIP_ASSERT
 	/* Fails if buffer size was exceeded */
-	/* assert( out <= &SAMPLES( m ) [m->size + end_frame_extra] ); */
+	assert( pos <= m->size );
 #endif
 
 	/* 31-bit * 15-bit = 46-bit >> 15 = 31-bit */
