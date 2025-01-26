@@ -248,8 +248,8 @@ int blip_read_samples( blip_t* m, short out [], int count, int stereo )
 	assert( count >= 0 );
 #endif
 	
-	if ( count > m->avail )
-		count = m->avail;
+	if ( count > blip_samples_avail(m) )
+		count = blip_samples_avail(m);
 	
 	if ( count )
 	{
