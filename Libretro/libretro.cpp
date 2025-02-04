@@ -540,6 +540,12 @@ extern "C" {
 			}
 		}
 
+		if(readVariable("mesen_audio_lowpass_cutoff", var)) {
+			int new_value = atoi(var.value);
+
+			set_blip_cutoff(new_value);
+		}
+		
 		if(readVariable(MesenAudioVolume, var)) {
 			int old_value = _audioVolume;
 
