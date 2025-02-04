@@ -3,7 +3,7 @@ enum { blackman_768K_taps = 1179 };
 
 
 /* 382K cutoff + 1.5K window */
-static buf_t const blackman_768K[blackman_768K_taps] = {
+static buf_t const blackman_768K_384K[blackman_768K_taps] = {
 LPF_TAPS(0.000000000000000000),
 LPF_TAPS(0.000000000270411186),
 LPF_TAPS(-0.000000000994249696),
@@ -1186,11 +1186,8 @@ LPF_TAPS(0.000000000000000000),
 };
 
 
-/* Blackman( 768K sampling, 190K cutoff, 3K transition ) */
-enum { blackman_768K_384K_taps = 1179 };
-
 /* 194K cutoff + 1.5K window */
-static buf_t const blackman_768K_384K[blackman_768K_taps] = {
+static buf_t const blackman_768K_192K[blackman_768K_taps] = {
 LPF_TAPS(0.000000000000000000),
 LPF_TAPS(0.000000000270411187),
 LPF_TAPS(0.000000005464226025),
@@ -2374,7 +2371,7 @@ LPF_TAPS(0.000000000000000000),
 
 
 /* 94K cutoff + 1.5K window */
-static buf_t const blackman_768K_192K[blackman_768K_taps] = {
+static buf_t const blackman_768K_96K[blackman_768K_taps] = {
 LPF_TAPS(0.000000000000000000),
 LPF_TAPS(-0.000000000270411184),
 LPF_TAPS(-0.000000004566831930),
@@ -3558,7 +3555,7 @@ LPF_TAPS(0.000000000000000000),
 
 
 /* 46K cutoff + 1.5K window */
-static buf_t const blackman_768K_96K[blackman_768K_taps] = {
+static buf_t const blackman_768K_48K[blackman_768K_taps] = {
 LPF_TAPS(0.000000000000000000),
 LPF_TAPS(0.000000001359448860),
 LPF_TAPS(0.000000004667803778),
@@ -4742,7 +4739,7 @@ LPF_TAPS(0.000000000000000000),
 
 
 /* 22K cutoff + 1.5K window */
-static buf_t const blackman_768K_48K[blackman_768K_taps] = {
+static buf_t const blackman_768K_24K[blackman_768K_taps] = {
 LPF_TAPS(0.000000000000000000),
 LPF_TAPS(-0.000000001152484340),
 LPF_TAPS(-0.000000005095710178),

@@ -3,7 +3,7 @@ enum { blackman_48K_taps = 75 };
 
 
 /* 22K cutoff + 1.5K window */
-static buf_t const blackman_48K[blackman_48K_taps] = {
+static buf_t const blackman_48K_24K[blackman_48K_taps] = {
 LPF_TAPS(0.000000000000000000),
 LPF_TAPS(0.000000000000000000),
 LPF_TAPS(0.000006172351880734),
