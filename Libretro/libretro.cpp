@@ -552,9 +552,7 @@ extern "C" {
 
 			_audioVolume = atoi(var.value);
 
-			if(old_value != _audioVolume) {
-				_console->GetSettings()->SetMasterVolume(10.0 * _audioVolume / 100.0);
-			}
+			_console->GetSettings()->SetMasterVolume(10.0 * _audioVolume / 100.0);
 		}
 
 		auto getKeyCode = [=](int port, int retroKey) {
