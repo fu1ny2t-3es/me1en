@@ -543,6 +543,7 @@ extern "C" {
 		if(readVariable("mesen_audio_lowpass_cutoff", var)) {
 			int new_value = atoi(var.value);
 
+			extern void set_blip_cutoff(int);
 			set_blip_cutoff(new_value);
 		}
 		
