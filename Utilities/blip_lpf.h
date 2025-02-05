@@ -51,7 +51,7 @@ static int blip_lpf_cutoff = 0;  /* set to nyquist (1/2) of final output samplin
 #endif
 
 
-void set_blip_cutoff(int rate)
+extern void set_blip_cutoff(int rate)
 {
 	blip_lpf_cutoff = rate;
 }
