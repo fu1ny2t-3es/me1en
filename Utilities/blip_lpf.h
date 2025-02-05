@@ -51,10 +51,18 @@ static int blip_lpf_cutoff = 0;  /* set to nyquist (1/2) of final output samplin
 #endif
 
 
-extern void set_blip_cutoff(int rate)
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void set_blip_cutoff(int rate)
 {
 	blip_lpf_cutoff = rate;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 
 static int blip_lpf_taps(int sample_rate)
