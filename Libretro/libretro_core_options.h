@@ -539,24 +539,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "disabled"
    },
    {
-      "mesen_plus_gx_audio_lowpass_cutoff",
-      "Lowpass Cutoff Rate",
-      NULL,
-      "Remove high frequency, aliasing sounds beyond nyquist. Set to 1/2 of final output sampling rate.",
-      NULL,
-      "audio",
-      {
-         { "0", "Disabled" },
-         { "24000" },
-         { "48000" },
-         { "96000" },
-         { "192000" },
-         { "384000" },
-         { NULL, NULL },
-      },
-      "24000"
-   },
-   {
       "mesen_audio_sample_rate",
       "Sound Output Sample Rate",
       NULL,
@@ -575,6 +557,24 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { NULL, NULL },
       },
       "48000"
+   },
+   {
+      "mesen_plus_gx_audio_lowpass_cutoff",
+      "Lowpass Cutoff Rate",
+      NULL,
+      "Remove high frequency, aliasing sounds beyond nyquist. Set to 1/2 of final output sampling rate.",
+      NULL,
+      "audio",
+      {
+         { "0", "Disabled" },
+         { "24000" },
+         { "48000" },
+         { "96000" },
+         { "192000" },
+         { "384000" },
+         { NULL, NULL },
+      },
+      "24000"
    },
    {
       "mesen_audio_volume",
