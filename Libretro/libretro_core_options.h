@@ -550,8 +550,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "24000" },
          { "48000" },
          { "96000" },
-         { "192000 },
-         { "384000 },
+         { "192000" },
+         { "384000" },
          { NULL, NULL },
       },
       "24000"
