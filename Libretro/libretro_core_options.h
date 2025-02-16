@@ -185,6 +185,50 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "Disabled"
    },
    {
+      "mesen_hdpacks",
+      "Enable HD Packs",
+      NULL,
+      NULL,
+      NULL,
+      "video",
+      {
+         { "disabled", NULL },
+         { "enabled",  NULL },
+         { NULL, NULL },
+      },
+      "enabled"
+   },
+   {
+      "mesen_screenrotation",
+      "Screen Rotation",
+      NULL,
+      "Rotates the display by the specified angle. This is useful to play games (generally homebrew games) designed for a vertical display.",
+      NULL,
+      "video",
+      {
+         { "None",        NULL },
+         { "90 degrees",  NULL },
+         { "180 degrees", NULL },
+         { "270 degrees", NULL },
+         { NULL, NULL },
+      },
+      "None"
+   },
+   {
+      "mesen_nospritelimit",
+      "Remove sprite limit",
+      NULL,
+      "The NES can normally only draw up to 8 sprites per line, this limitation is indirectly responsible for some of the flickering seen in games at times. When this option is enabled, the limit is disabled, allowing up to 64 sprites to be drawn on the same line.",
+      NULL,
+      "video",
+      {
+         { "disabled", NULL },
+         { "enabled",  NULL },
+         { NULL, NULL },
+      },
+      "disabled"
+   },
+   {
       "mesen_palette",
       "Palette",
       NULL,
@@ -207,20 +251,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { NULL, NULL },
       },
       "Default"
-   },
-   {
-      "mesen_nospritelimit",
-      "Remove sprite limit",
-      NULL,
-      "The NES can normally only draw up to 8 sprites per line, this limitation is indirectly responsible for some of the flickering seen in games at times. When this option is enabled, the limit is disabled, allowing up to 64 sprites to be drawn on the same line.",
-      NULL,
-      "video",
-      {
-         { "disabled", NULL },
-         { "enabled",  NULL },
-         { NULL, NULL },
-      },
-      "disabled"
    },
    {
       "mesen_overscan_left",
@@ -439,34 +469,30 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "Auto"
    },
    {
-      "mesen_hdpacks",
-      "Enable HD Packs",
+      "mesen_white_level",
+      "Adjust White Level",
       NULL,
-      NULL,
+      "Makes color $20 light grey instead of pure white",
       NULL,
       "video",
       {
-         { "disabled", NULL },
-         { "enabled",  NULL },
-         { NULL, NULL },
+         { "Disabled", NULL },
+         { "Enabled",  NULL },
       },
-      "enabled"
+      "Auto"
    },
    {
-      "mesen_screenrotation",
-      "Screen Rotation",
+      "mesen_black_level",
+      "Adjust Black Level",
       NULL,
-      "Rotates the display by the specified angle. This is useful to play games (generally homebrew games) designed for a vertical display.",
+      "Makes color $1D near-dark instead of pure black",
       NULL,
       "video",
       {
-         { "None",        NULL },
-         { "90 degrees",  NULL },
-         { "180 degrees", NULL },
-         { "270 degrees", NULL },
-         { NULL, NULL },
+         { "Disabled", NULL },
+         { "Enabled",  NULL },
       },
-      "None"
+      "Auto"
    },
    {
       "mesen_fake_stereo",
