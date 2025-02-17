@@ -408,7 +408,6 @@ extern "C" {
 				printf("%d %x\n", customPaletteSize, customPalette[0x20]);
 				if((customPaletteSize == 64) && ((customPalette[0x20] & 0xFFFFFF) == 0xFFFFFF)) {
 					customPalette[0x20] = 0xFFE0E0E0;
-					customPalette[0x20] = 0xFF080808;
 				}
 				printf("%d %x\n", customPaletteSize, customPalette[0x20]);
 			}
@@ -417,7 +416,6 @@ extern "C" {
 				printf("%d %x\n", customPaletteSize, customPalette[0x1D]);
 				if((customPaletteSize == 64) && ((customPalette[0x1D] & 0xFFFFFF) == 0)) {
 					customPalette[0x1D] = 0xFF080808;
-					customPalette[0x1D] = 0xFFE0E0E0;
 				}
 				printf("%d %x\n", customPaletteSize, customPalette[0x1D]);
 			}
@@ -577,7 +575,7 @@ extern "C" {
 		if(readVariable(MesenAudioVolume, var)) {
 			_audioVolume = atoi(var.value);
 
-			_console->GetSettings()->SetMasterVolume(5.0 * _audioVolume / 100.0);
+			_console->GetSettings()->SetMasterVolume(1.0 * _audioVolume / 100.0);
 		}
 
 		if(readVariable("mesen_white_level", var)) {
