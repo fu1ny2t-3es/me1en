@@ -404,22 +404,33 @@ extern "C" {
 				load_custom_palette();
 			}
 
-			if(_whiteLevel == 1) {
-				printf("%d %x\n", customPaletteSize, customPalette[0x20]);
-				if((customPaletteSize == 64) && ((customPalette[0x20] & 0xFFFFFF) == 0xFFFFFF)) {
+			if((customPaletteSize == 64) && ((customPalette[0x20] & 0xFFFFFF) == 0xFFFFFF)) {
+				/* Castlevania 3 */
+				if(_whiteLevel == 1)
 					customPalette[0x20] = 0xFFE0E0E0;
-					customPalette[0x20] = 0xFF080808;
+
+				else if(_whiteLevel == 2) {
+					static int count = 0;
+
+					if(count++ >= 60)
+						customPalette[0x20] = 0xFFE0E0E0;
+					else if(count >= 120)
+						customPalette[0x20] = 0xFF202020;
 				}
-				printf("%d %x\n", customPaletteSize, customPalette[0x20]);
 			}
 
-			if(_blackLevel == 1) {
-				printf("%d %x\n", customPaletteSize, customPalette[0x1D]);
-				if((customPaletteSize == 64) && ((customPalette[0x1D] & 0xFFFFFF) == 0)) {
-					customPalette[0x1D] = 0xFF080808;
-					customPalette[0x1D] = 0xFFE0E0E0;
+			if((customPaletteSize == 64) && ((customPalette[0x1D] & 0xFFFFFF) == 0)) {
+				if(_blackLevel == 1)
+					customPalette[0x1D] = 0xFF202020;
+
+				else if(_blackLevel == 2) {
+					static int count = 0;
+
+					if(count++ >= 60)
+						customPalette[0x1D] = 0xFFE0E0E0;
+					else if(count >= 120)
+						customPalette[0x1D] = 0xFF202020;
 				}
-				printf("%d %x\n", customPaletteSize, customPalette[0x1D]);
 			}
 
 			if(value == "Raw") {
