@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         # arch: [so64, x86, x64]
-        arch: [x86]
+        arch: [x86, x64]
       fail-fast: false
 
 
