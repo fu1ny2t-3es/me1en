@@ -408,6 +408,7 @@ extern "C" {
 				printf("%d %x\n", customPaletteSize, customPalette[0x20]);
 				if((customPaletteSize == 64) && ((customPalette[0x20] & 0xFFFFFF) == 0xFFFFFF)) {
 					customPalette[0x20] = 0xFFE0E0E0;
+					customPalette[0x20] = 0xFF080808;
 				}
 				printf("%d %x\n", customPaletteSize, customPalette[0x20]);
 			}
@@ -416,6 +417,7 @@ extern "C" {
 				printf("%d %x\n", customPaletteSize, customPalette[0x1D]);
 				if((customPaletteSize == 64) && ((customPalette[0x1D] & 0xFFFFFF) == 0)) {
 					customPalette[0x1D] = 0xFF080808;
+					customPalette[0x1D] = 0xFFE0E0E0;
 				}
 				printf("%d %x\n", customPaletteSize, customPalette[0x1D]);
 			}
