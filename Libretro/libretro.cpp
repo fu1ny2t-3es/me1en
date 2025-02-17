@@ -569,7 +569,7 @@ extern "C" {
 		if(readVariable(MesenAudioVolume, var)) {
 			_audioVolume = atoi(var.value);
 
-			_console->GetSettings()->SetMasterVolume(10.0 * _audioVolume / 100.0);
+			_console->GetSettings()->SetMasterVolume(5.0 * _audioVolume / 100.0);
 		}
 
 		if(readVariable("mesen_white_level", var)) {
