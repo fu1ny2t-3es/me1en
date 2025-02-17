@@ -402,7 +402,19 @@ extern "C" {
 			} else if(value == "Custom") {
 				load_custom_palette();
 			}
-			
+
+			if(_whiteLevel == 1) {
+				if(customPaletteSize == 64 && ((customPalette[0x20] & 0xFFFFFF) == 0xFFFFFF)) {
+					customPalette[0x20] = 0xFFE0E0E0;
+				}
+			}
+
+			if(_blackLevel == 1) {
+				if(customPaletteSize == 64 && ((customPalette[0x1D] & 0xFFFFFF) == 0)) {
+					customPalette[0x1D] = 0xFF080808;
+				}
+			}
+
 			if(value == "Raw") {
 				//Using the raw palette replaces the NTSC filters, if one is selected
 				_console->GetSettings()->SetVideoFilterType(VideoFilterType::Raw);
