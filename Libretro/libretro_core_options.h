@@ -585,7 +585,7 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "48000"
    },
    {
-      "mesen_plus_gx_audio_lowpass_cutoff",
+      "mesen_audio_lowpass_cutoff",
       "Lowpass Cutoff Rate",
       NULL,
       "Remove high frequency, aliasing sounds beyond nyquist. Set to 1/2 of final output sampling rate.",
