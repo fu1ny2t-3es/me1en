@@ -305,7 +305,6 @@ extern "C" {
 			palette.seekg(0, ios::beg);
 			if((fileSize == 64 * 3) || (fileSize == 512 * 3)) {
 				palette.read((char*)fileData, fileSize);
-				uint32_t customPalette[512];
 				for(int i = 0; i < fileSize / 3; i++) {
 					customPalette[i] = 0xFF000000 | fileData[i * 3 + 2] | (fileData[i * 3 + 1] << 8) | (fileData[i * 3] << 16);
 				}
@@ -568,8 +567,6 @@ extern "C" {
 		}
 		
 		if(readVariable(MesenAudioVolume, var)) {
-			int old_value = _audioVolume;
-
 			_audioVolume = atoi(var.value);
 
 			_console->GetSettings()->SetMasterVolume(10.0 * _audioVolume / 100.0);
