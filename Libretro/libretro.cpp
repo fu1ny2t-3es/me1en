@@ -97,6 +97,8 @@ uint32_t sonyCxa2025AsPalette[0x40] { 0xFF585858, 0xFF00238C, 0xFF00139B, 0xFF2D
 uint32_t wavebeamPalette[0x40] { 0xFF6B6B6B, 0xFF001B88, 0xFF21009A, 0xFF40008C, 0xFF600067, 0xFF64001E, 0xFF590800, 0xFF481600, 0xFF283600, 0xFF004500, 0xFF004908, 0xFF00421D, 0xFF003659, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFB4B4B4, 0xFF1555D3, 0xFF4337EF, 0xFF7425DF, 0xFF9C19B9, 0xFFAC0F64, 0xFFAA2C00, 0xFF8A4B00, 0xFF666B00, 0xFF218300, 0xFF008A00, 0xFF008144, 0xFF007691, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFF63B2FF, 0xFF7C9CFF, 0xFFC07DFE, 0xFFE977FF, 0xFFF572CD, 0xFFF4886B, 0xFFDDA029, 0xFFBDBD0A, 0xFF89D20E, 0xFF5CDE3E, 0xFF4BD886, 0xFF4DCFD2, 0xFF525252, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFFBCDFFF, 0xFFD2D2FF, 0xFFE1C8FF, 0xFFEFC7FF, 0xFFFFC3E1, 0xFFFFCAC6, 0xFFF2DAAD, 0xFFEBE3A0, 0xFFD2EDA2, 0xFFBCF4B4, 0xFFB5F1CE, 0xFFB6ECF1, 0xFFBFBFBF, 0xFF000000, 0xFF000000 };
 uint32_t customPalette[512], customPaletteSize;
 
+#include <stdio.h>
+
 extern "C" {
 	void logMessage(retro_log_level level, const char* message)
 	{
@@ -403,15 +405,19 @@ extern "C" {
 			}
 
 			if(_whiteLevel == 1) {
-				if(customPaletteSize == 64 && ((customPalette[0x20] & 0xFFFFFF) == 0xFFFFFF)) {
+				printf("%d %x\n", customPaletteSize, customPalette[0x20]);
+				if((customPaletteSize == 64) && ((customPalette[0x20] & 0xFFFFFF) == 0xFFFFFF)) {
 					customPalette[0x20] = 0xFFE0E0E0;
 				}
+				printf("%d %x\n", customPaletteSize, customPalette[0x20]);
 			}
 
 			if(_blackLevel == 1) {
-				if(customPaletteSize == 64 && ((customPalette[0x1D] & 0xFFFFFF) == 0)) {
+				printf("%d %x\n", customPaletteSize, customPalette[0x1D]);
+				if((customPaletteSize == 64) && ((customPalette[0x1D] & 0xFFFFFF) == 0)) {
 					customPalette[0x1D] = 0xFF080808;
 				}
+				printf("%d %x\n", customPaletteSize, customPalette[0x1D]);
 			}
 
 			if(value == "Raw") {
